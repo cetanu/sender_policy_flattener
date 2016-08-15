@@ -134,3 +134,6 @@ ENV/
 
 # Rope project settings
 .ropeproject
+
+sums.json
+results.html
