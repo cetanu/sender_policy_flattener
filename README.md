@@ -5,11 +5,10 @@ Wut diz?
 --------
 
 We had a problem in our organisation that caused our SPF records to become invalid:
-When customers computers were querying our SPF records, there were more than 10 after following all of the `include:` remarks.
 
-Solution?
+When customers computers were querying our SPF records, there were more than 10 lookups required after following all of the `include:` remarks.
 
-Query them all! and give back just the IP addresses.
+Solution? Query them ourselves, and create a much more condense list of SPF records.
 
 How do I use it?
 ----------------
@@ -22,6 +21,6 @@ Wanna just put IP Addresses in there? You probably don't need this, and also, yo
 
 Once configured, just run the script, and it'll email you something that looks vaguely like this:
 
-![Example screenshot](examples/example.png)
+![Example screenshot](example/example.png)
 
 Cool, right?
