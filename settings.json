@@ -1,0 +1,21 @@
+{
+    "sending domains": {
+        "mydomain.com": {
+            "facebook.com": "txt",
+            "google.com": "txt",
+            "apple.com": "txt",
+            "reddit.com": "txt"
+        }
+    },
+    "resolvers": [
+        "8.8.8.8",
+        "8.8.4.4"
+    ],
+    "email": {
+        "to": "your@email.com",
+        "from": "your@email.com",
+        "subject": "[Change Detected] SPF Records for {zone} have changed.",
+        "server": "email_server"
+    },
+    "output": "sums.json"
+}
