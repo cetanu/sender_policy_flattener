@@ -25,7 +25,7 @@ from difflib import HtmlDiff
 # noinspection PyUnresolvedReferences, PyPackageRequirements
 # 3rd party imports
 from dns import resolver  # dnspython/3
-from netaddr import IPNetwork
+from netaddr import IPSet
 
 
 def hash_seq(iterable):
@@ -72,32 +72,15 @@ def recurse_lookup(resourcerecord, resourcetype):
                     yield ip
 
 
-def dedupe_netblocks(netblocks):
-    """
-        Compare networks and remove duplicates
-
-        This algorithm could use some improvement, but for the most part
-        it removes single addresses where there is already a subnet that
-        covers it
-    """
-    blocks = sorted(netblocks)
-    for block in blocks:
-        for reverseblock in reversed(blocks):
-            if IPNetwork(block) in IPNetwork(reverseblock) and block != reverseblock and block in blocks:
-                blocks.remove(block)
-            elif IPNetwork(reverseblock) in IPNetwork(block) and block != reverseblock and reverseblock in blocks:
-                blocks.remove(reverseblock)
-    return ['ip6:' + ip if ':' in ip else
-            'ip4:' + ip.replace('/32', '')
-            for ip in blocks]
-
-
 def flatten(records, domain):
     ips = set()
     for rrecord, rdtype in records.items():
         for ip in recurse_lookup(rrecord, rdtype):
             ips.add(ip)
-    ips = dedupe_netblocks(ips)
+    ips = [str(s) for s in IPSet(ips).iter_cidrs()]
+    ips = ['ip6:' + ip if ':' in ip else
+           'ip4:' + ip.replace('/32', '')
+           for ip in ips]
     ipv4blocks, last_record = separate_into_512bytes(ips)
     return [record for record in wrap_in_spf_tokens(domain, ipv4blocks, last_record)]
 
