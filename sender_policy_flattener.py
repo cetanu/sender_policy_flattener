@@ -30,7 +30,8 @@ from netaddr import IPSet
 
 def hash_seq(iterable):
     """ Acts as a centrifuge for our SPF records and returns a hash """
-    return hashlib.sha256(''.join(sorted(''.join(sorted(iterable)))).encode()).hexdigest()
+    flat_sorted_sequence = ' '.join(sorted([token for string in iterable for token in string.split()]))
+    return hashlib.sha256(flat_sorted_sequence.encode()).hexdigest()
 
 
 def bytelength(addresses):
