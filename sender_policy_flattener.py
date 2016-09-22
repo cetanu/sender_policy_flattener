@@ -55,6 +55,13 @@ def recurse_lookup(resourcerecord, resourcetype):
         answers = match.group('answers')
         if resourcetype == 'a':
             addresses = a_record.findall(answers)
+        elif resourcetype == 'cname':
+            name = answers.split()
+            if len(name):
+                name = str(name[-1]).rstrip('.')
+                addresses = recurse_lookup(name, 'a')
+            else:
+                addresses = []
         else:
             addresses = ip_address.findall(answers)
         includes = spf_include.findall(answers)
@@ -133,7 +140,7 @@ def email_changes(prev_addrs, curr_addrs):
     for record in curr_addrs:
         for string in output_bind_compatible(record):
             bindformat.append(string)
-    bindformat = '<p><h1>BIND compatible format:</h1>' + '<br>'.join(bindformat) + '</p>'
+    bindformat = '<p><h1>BIND compatible format:</h1><pre>' + '\n'.join(bindformat) + '</pre></p>'
 
     prev_addrs = ' '.join(prev_addrs)
     curr_addrs = ' '.join(curr_addrs)
