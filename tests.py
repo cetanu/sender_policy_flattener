@@ -11,6 +11,13 @@ class FlattenerTests(unittest.TestCase):
         jumbled = random.sample(printable, len(printable))
         self.assertTrue(spf.hash_seq(jumbled) == spf.hash_seq(printable))
 
+    def test_ipaddresses_are_extracted_from_raw_dnslookup(self):
+        pass
+
+    def test_ipaddresses_are_wrapped_in_tokens_correctly(self):
+        pass
+
+
 class SettingsTests(unittest.TestCase):
     def setUp(self):
         with open('settings.json') as f:
