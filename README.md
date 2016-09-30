@@ -1,3 +1,5 @@
+[![Build Status](https://drone.io/github.com/cetanu/sender_policy_flattener/status.png)](https://drone.io/github.com/cetanu/sender_policy_flattener/latest)
+
 sender_policy_flattener
 =======================
 
