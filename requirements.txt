@@ -1,2 +1,3 @@
 dnspython3
 netaddr
+nose

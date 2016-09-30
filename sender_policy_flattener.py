@@ -64,13 +64,13 @@ def recurse_lookup(resourcerecord, resourcetype):
                 addresses = []
         else:
             addresses = ip_address.findall(answers)
-        includes = spf_include.findall(answers)
 
         for ip in addresses:
             if resourcetype == 'a' and '/' not in ip:
                 ip += '/32'
             yield ip
 
+        includes = spf_include.findall(answers)
         if includes:
             for includetype, hostname in includes:
                 includetype = includetype.lower().strip(' 1234567890')  # Remove priority info from mx records
@@ -89,7 +89,7 @@ def flatten(records, domain):
     ips = ['ip6:' + ip if ':' in ip else
            'ip4:' + ip.replace('/32', '')
            for ip in ips]
-    ipv4blocks, last_record = separate_into_512bytes(ips)
+    ipv4blocks, last_record = separate_into_450bytes(ips)
     return [record for record in wrap_in_spf_tokens(domain, ipv4blocks, last_record)]
 
 
@@ -103,10 +103,10 @@ def wrap_in_spf_tokens(domain, ipv4blocks, last_record):
         yield spfrecord
 
 
-def separate_into_512bytes(ips):
+def separate_into_450bytes(ips):
     ipv4blocks = [ips]
     for index, addresses in enumerate(ipv4blocks):
-        while bytelength(addresses) >= 485:  # 485 allows for spf prefix/suffixes, such as includes
+        while bytelength(addresses) >= 450:  # https://tools.ietf.org/html/rfc4408
             overflow = ipv4blocks[index].pop()
             try:
                 ipv4blocks[index + 1]
@@ -158,9 +158,9 @@ def email_changes(prev_addrs, curr_addrs):
     header = '<h1>Diff</h1>'
     html = style + bindformat + header + table
     html = MIMEText(html, 'html')
-    msg_template = MIMEMultipart('alternative')
-    msg_template['Subject'] = subject.format(zone=zone)
-    email = msg_template
+    msg = MIMEMultipart('alternative')
+    msg['Subject'] = subject.format(zone=zone)
+    email = msg
     email.attach(html)
 
     try:
@@ -184,13 +184,13 @@ if __name__ == "__main__":
     nameserver.nameservers = [resolver for resolver in settings['resolvers']]
 
     #
-    # Various regexes
+    # Various regexes for record types and values
     #
     dns_answer = re.compile(r'ANSWER\n(?P<answers>[^;]+)')
     ip_address = re.compile(r'(?<=ip[46]:)\S+')
     a_record = re.compile(r'((?:\d{1,3}\.){3}\d{1,3})')
-    spf_include = re.compile(r'(?P<type>include|a|mx(?: \d+)? ?|ptr|cname ?)[:](?P<hostname>[^\s\'\"]+\w)',
-                             flags=re.IGNORECASE)
+    spf_include = re.compile(r'(?P<type>include|a|mx(?: \d+)? ?|ptr|cname ?)[:](?P<hostname>[^\s\'\"]+\w)', flags=re.IGNORECASE)
+
     #
     # Email setup
     #
