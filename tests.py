@@ -16,8 +16,8 @@ class FlattenerTests(unittest.TestCase):
         cls.ip_address = re.compile(r'(?<=ip[46]:)\S+')
         cls.a_record = re.compile(r'((?:\d{1,3}\.){3}\d{1,3})')
         cls.spf_include = re.compile(r'(?P<type>include|a|mx(?: \d+)? ?|ptr|cname ?)[:](?P<hostname>[^\s\'\"]+\w)', flags=re.IGNORECASE)
-        cls.response = self.fixtures['dns_regex']['response']
-        cls.answer = self.fixtures['dns_regex']['answer_section']
+        cls.response = cls.fixtures['dns_regex']['response']
+        cls.answer = cls.fixtures['dns_regex']['answer_section']
 
     def test_hashseq_produces_consistent_hash(self):
         jumbled = random.sample(printable, len(printable))
