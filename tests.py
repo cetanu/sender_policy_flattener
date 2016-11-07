@@ -8,15 +8,16 @@ import sender_policy_flattener as spf
 
 
 class FlattenerTests(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         with open('fixtures.json') as f:
-            self.fixtures = json.load(f)
-        self.dns_answer = re.compile(r'ANSWER\n(?P<answers>[^;]+)')
-        self.ip_address = re.compile(r'(?<=ip[46]:)\S+')
-        self.a_record = re.compile(r'((?:\d{1,3}\.){3}\d{1,3})')
-        self.spf_include = re.compile(r'(?P<type>include|a|mx(?: \d+)? ?|ptr|cname ?)[:](?P<hostname>[^\s\'\"]+\w)', flags=re.IGNORECASE)
-        self.response = self.fixtures['dns_regex']['response']
-        self.answer = self.fixtures['dns_regex']['answer_section']
+            cls.fixtures = json.load(f)
+        cls.dns_answer = re.compile(r'ANSWER\n(?P<answers>[^;]+)')
+        cls.ip_address = re.compile(r'(?<=ip[46]:)\S+')
+        cls.a_record = re.compile(r'((?:\d{1,3}\.){3}\d{1,3})')
+        cls.spf_include = re.compile(r'(?P<type>include|a|mx(?: \d+)? ?|ptr|cname ?)[:](?P<hostname>[^\s\'\"]+\w)', flags=re.IGNORECASE)
+        cls.response = self.fixtures['dns_regex']['response']
+        cls.answer = self.fixtures['dns_regex']['answer_section']
 
     def test_hashseq_produces_consistent_hash(self):
         jumbled = random.sample(printable, len(printable))
@@ -61,9 +62,10 @@ class FlattenerTests(unittest.TestCase):
 
 
 class SettingsTests(unittest.TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpClass(cls):
         with open('settings.json') as f:
-            self.settings = json.load(f)
+            cls.settings = json.load(f)
 
     def test_settings_contains_min_details(self):
         min_keys = ['sending domains', 'email', 'output']
