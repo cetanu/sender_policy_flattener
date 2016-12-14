@@ -5,7 +5,7 @@
         1. DNS Lookups on your specified records, returns their ipv4 addresses
         2. Recursively finds 'includes' and other hostnames, returns their ipv4 addresses
         2. Dedupes network blocks
-        3. Generates new records, each below 512 bytes
+        3. Generates new records, each below 450 bytes
         4. Saves the result, plus a hash of the result, in a file
         5. Will compare with the previous records on the next run, and email if they are different
 
@@ -86,10 +86,10 @@ def recurse_lookup(resourcerecord, resourcetype):
                     yield ip
 
 
-def separate_into_512bytes(ips):
+def separate_into_450bytes(ips):
     ipv4blocks = [ips]
     for index, addresses in enumerate(ipv4blocks):
-        while bytelength(addresses) >= 512:  # 485 allows for spf prefix/suffixes, such as includes
+        while bytelength(addresses) >= 450:  # 485 allows for spf prefix/suffixes, such as includes
             overflow = ipv4blocks[index].pop()
             try:
                 ipv4blocks[index + 1]
