@@ -50,14 +50,15 @@ class FlattenerTests(unittest.TestCase):
     def test_ipaddresses_are_separated_correctly(self):
         ips = self.fixtures['flattening']['ips']
         ipblocks, lastrec = spf.separate_into_450bytes(ips)
-
         ipblocks = [list(x) for x in ipblocks]
+        print(ipblocks)
         ipblocks = spf.hash_seq(repr(ipblocks))
+        
         expected_ipblocks = self.fixtures['flattening']['separated']
         expected_ipblocks = spf.hash_seq(repr(expected_ipblocks))
-        self.assertEqual(ipblocks, expected_ipblocks)
-
         expected_lastrec = self.fixtures['flattening']['lastrec']
+        
+        self.assertEqual(ipblocks, expected_ipblocks)        
         self.assertEqual(lastrec, expected_lastrec)
 
 
