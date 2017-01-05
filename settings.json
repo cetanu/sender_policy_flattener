@@ -1,10 +1,14 @@
 {
     "sending domains": {
         "mydomain.com": {
-            "facebook.com": "txt",
+            "yahoo.com": "a",
             "google.com": "txt",
             "apple.com": "txt",
             "reddit.com": "txt"
+        },
+        "myseconddomain.com": {
+            "cisco.com": "a",
+            "oculus.com": "a"
         }
     },
     "resolvers": [

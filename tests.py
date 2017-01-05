@@ -21,7 +21,7 @@ class FlattenerTests(unittest.TestCase):
 
     def test_hashseq_produces_consistent_hash(self):
         jumbled = random.sample(printable, len(printable))
-        self.assertTrue(spf.hash_seq(jumbled) == spf.hash_seq(printable))
+        self.assertTrue(spf.hashed_sequence(jumbled) == spf.hashed_sequence(printable))
 
     def test_answer_section_is_extracted_from_dns_response(self):
         expected = self.fixtures['dns_regex']['answer_section']
@@ -51,10 +51,10 @@ class FlattenerTests(unittest.TestCase):
         ips = self.fixtures['flattening']['ips']
         ipblocks, lastrec = spf.separate_into_450bytes(ips)
         ipblocks = [list(x) for x in ipblocks]
-        ipblocks = spf.hash_seq(repr(ipblocks))
+        ipblocks = spf.hashed_sequence(repr(ipblocks))
         
         expected_ipblocks = self.fixtures['flattening']['separated']
-        expected_ipblocks = spf.hash_seq(repr(expected_ipblocks))
+        expected_ipblocks = spf.hashed_sequence(repr(expected_ipblocks))
         expected_lastrec = self.fixtures['flattening']['lastrec']
         
         self.assertEqual(ipblocks, expected_ipblocks)        
