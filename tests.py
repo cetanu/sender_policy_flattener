@@ -51,7 +51,6 @@ class FlattenerTests(unittest.TestCase):
         ips = self.fixtures['flattening']['ips']
         ipblocks, lastrec = spf.separate_into_450bytes(ips)
         ipblocks = [list(x) for x in ipblocks]
-        print(ipblocks)
         ipblocks = spf.hash_seq(repr(ipblocks))
         
         expected_ipblocks = self.fixtures['flattening']['separated']
