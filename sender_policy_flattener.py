@@ -159,7 +159,7 @@ def crawl_spf_record(resourcerecord, resourcetype):
 def separate_into_450bytes(ips):
     ipv4blocks = [ips]
     for index, addresses in enumerate(ipv4blocks):
-        while recordbytelength(addresses) >= 450:  # 485 allows for spf prefix/suffixes, such as includes
+        while recordbytelength(addresses) >= 450:  # https://tools.ietf.org/html/rfc4408
             overflow = ipv4blocks[index].pop()
             try:
                 ipv4blocks[index + 1]
