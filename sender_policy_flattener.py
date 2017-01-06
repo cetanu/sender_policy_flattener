@@ -272,8 +272,11 @@ def flatten(input_records, lastresult=None):
 if __name__ == "__main__":
     args = parse_arguments()
 
-    with open(args.config) as config:
-        settings = json.load(config)
+    if not args.config:
+        settings = {}
+    else:
+        with open(args.config) as config:
+            settings = json.load(config)
 
     nameserver = resolver.Resolver()
     nameserver.nameservers = settings.get('resolvers', None) or args.resolvers
