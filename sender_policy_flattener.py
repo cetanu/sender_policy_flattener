@@ -63,7 +63,7 @@ def parse_arguments():
     parser.add_argument(
         '-c', '--config', dest='config',
         help='Name/path of JSON configuration file',
-        default='settings.json', required=False)
+        default=None, required=False)
 
     parser.add_argument(
         '-r', '--resolvers', dest='resolvers',
