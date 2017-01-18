@@ -21,7 +21,7 @@ You could theoretically extract the flat IP records from the resulting JSON file
 How do I use it?
 ----------------
 
-Python 2.7 and up is required.
+Python 2.7, or 3.3+ is required.
 
 Here's the usage:
 
