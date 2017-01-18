@@ -1,4 +1,4 @@
-[![Build Status](https://drone.io/github.com/cetanu/sender_policy_flattener/status.png)](https://drone.io/github.com/cetanu/sender_policy_flattener/latest)
+[![Build Status](https://api.travis-ci.org/cetanu/sender_policy_flattener.svg?branch=master)](https://travis-ci.org/cetanu/sender_policy_flattener)
 
 sender_policy_flattener
 =======================
@@ -21,7 +21,9 @@ You could theoretically extract the flat IP records from the resulting JSON file
 How do I use it?
 ----------------
 
-Python 3 is preferred, but Python 2 might work (this has been tested on 3.5.2)
+Python 2.7 and up is required.
+
+Here's the usage:
 
     usage: sender_policy_flattener.py [-h] [-c CONFIG] [-r RESOLVERS] [-t TOADDR]
                                       [-f FROMADDR] [-s SUBJECT] [-d DOMAINS]
@@ -66,10 +68,8 @@ I've provided a `settings.json` file with an example configuration file.
 3rd party dependencies
 ----------------------
 
-3rd party modules:
-
 * netaddr
-* dnspython (or dnspython3)
+* dnspython
 
 Example email format
 --------------------
