@@ -22,6 +22,7 @@ class FlattenerTests(unittest.TestCase):
     def test_hashseq_produces_consistent_hash(self):
         jumbled = random.sample(printable, len(printable))
         self.assertTrue(spf.hashed_sequence(jumbled) == spf.hashed_sequence(printable))
+        print('{0} == {1}'.format(repr(spf.hashed_sequence(jumbled)), repr(spf.hashed_sequence(printable))))
 
     def test_answer_section_is_extracted_from_dns_response(self):
         expected = self.fixtures['dns_regex']['answer_section']
