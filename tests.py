@@ -1,4 +1,3 @@
-""" Yes, just one file for tests will do. """
 import unittest
 import json
 import random
