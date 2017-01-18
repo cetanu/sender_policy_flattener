@@ -157,7 +157,7 @@ def crawl_spf_record(resourcerecord, resourcetype):
 
 
 def separate_into_450bytes(ips):
-    ipv4blocks = [ips]
+    ipv4blocks = [set(ips)]
     for index, addresses in enumerate(ipv4blocks):
         while recordbytelength(addresses) >= 450:  # https://tools.ietf.org/html/rfc4408
             overflow = ipv4blocks[index].pop()
