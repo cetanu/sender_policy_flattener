@@ -63,12 +63,11 @@ class FlattenerTests(unittest.TestCase):
         ips = self.fixtures['flattening']['ips']
         ipblocks, lastrec = spf.separate_into_450bytes(ips)
         records = [record for record in spf.wrap_in_spf_tokens('unittest.com', ipblocks, lastrec)]
-        bindformat = list()
         for record in records:
-            bindformat += list(spf.bind_compatible_string(record))
-        bindformat = '<p><h1>BIND compatible format:</h1><pre>' + '\n'.join(bindformat) + '</pre></p>'
-        self.assertTrue(bindformat.count('(') == 1)
-        self.assertTrue(bindformat.count(')') == 1)
+            bindformat = str(list(spf.bind_compatible_string(record)))
+            print(bindformat)
+            self.assertTrue(bindformat.count('(') == 1)
+            self.assertTrue(bindformat.count(')') == 1)
 
 
 class SettingsTests(unittest.TestCase):
