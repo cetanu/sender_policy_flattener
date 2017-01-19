@@ -64,7 +64,7 @@ class FlattenerTests(unittest.TestCase):
         ipblocks, lastrec = spf.separate_into_450bytes(ips)
         records = [record for record in spf.wrap_in_spf_tokens('unittest.com', ipblocks, lastrec)]
         for record in records:
-            bindformat = ''.join(list(spf.bind_compatible_string(record)))
+            bindformat = '\n'.join(list(spf.bind_compatible_string(record)))
             print(bindformat)
             self.assertTrue(bindformat.count('(') == 1)
             self.assertTrue(bindformat.count(')') == 1)
