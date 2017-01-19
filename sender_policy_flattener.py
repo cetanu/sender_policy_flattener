@@ -198,10 +198,10 @@ def bind_compatible_string(spfrec):
     spfrec = spfrec.split()
     while spfrec:
         line, end = '"', '"'
-        if not len((line + end).strip('"')):
-            line = '( "'
         try:
             for i in range(4):
+                if not len((line + end).strip('"')):
+                    line = '( "'
                 line += spfrec.pop(0) + ' '
         except IndexError:
             end = '" )'
