@@ -58,6 +58,12 @@ class FlattenerTests(unittest.TestCase):
         
         self.assertEqual(ipblocks, expected_ipblocks)        
         self.assertEqual(lastrec, expected_lastrec)
+        
+    def test_bind_compatible_format_doesnt_dupe_parens(self):
+        ips = self.fixtures['flattening']['ips']
+        ipblocks, lastrec = spf.separate_into_450bytes(ips)
+        ipblocks = [list(x) for x in ipblocks]
+        print(spf.bind_compatible_string(ipblocks))
 
 
 class SettingsTests(unittest.TestCase):
