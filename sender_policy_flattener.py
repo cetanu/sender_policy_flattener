@@ -196,12 +196,11 @@ def spf2ips(records, domain):
 
 def bind_compatible_string(spfrec):
     spfrec = spfrec.split()
+    yield '( '
     while spfrec:
         line, end = '"', '"'
         try:
-            for i in range(4):
-                if not len((line + end).strip('"')):
-                    line = '( "'
+            for i in range(3):
                 line += spfrec.pop(0) + ' '
         except IndexError:
             end = '" )'
@@ -211,7 +210,7 @@ def bind_compatible_string(spfrec):
 
 def email_changes(zone, prev_addrs, curr_addrs):
     bindformat = list()
-    for record in curr_addrs:
+    for record in records:
         bindformat += list(bind_compatible_string(record))
     bindformat = '<p><h1>BIND compatible format:</h1><pre>' + '\n'.join(bindformat) + '</pre></p>'
 
