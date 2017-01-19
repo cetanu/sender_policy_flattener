@@ -200,12 +200,13 @@ def bind_compatible_string(spfrec):
     while spfrec:
         line, end = '"', '"'
         try:
-            for i in range(3):
+            for i in range(4):
                 line += spfrec.pop(0) + ' '
         except IndexError:
-            end = '" )'
+            end = '"'
         finally:
             yield line + end
+    yield ' )'
 
 
 def email_changes(zone, prev_addrs, curr_addrs):
