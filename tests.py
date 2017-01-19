@@ -63,7 +63,7 @@ class FlattenerTests(unittest.TestCase):
         ips = self.fixtures['flattening']['ips']
         ipblocks, lastrec = spf.separate_into_450bytes(ips)
         ipblocks = [list(x) for x in ipblocks]
-        print(spf.bind_compatible_string(ipblocks))
+        print([x for x in spf.bind_compatible_string(ipblocks)])
 
 
 class SettingsTests(unittest.TestCase):
