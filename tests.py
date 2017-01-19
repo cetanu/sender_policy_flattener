@@ -65,7 +65,7 @@ class FlattenerTests(unittest.TestCase):
         records = [record for record in spf.wrap_in_spf_tokens('unittest.com', ipblocks, lastrec)]
         bindformat = list()
         for record in records:
-            bindformat += list(bind_compatible_string(record))
+            bindformat += list(spf.bind_compatible_string(record))
         bindformat = '<p><h1>BIND compatible format:</h1><pre>' + '\n'.join(bindformat) + '</pre></p>'
         print(bindformat)
 
