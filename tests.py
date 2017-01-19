@@ -67,7 +67,8 @@ class FlattenerTests(unittest.TestCase):
         for record in records:
             bindformat += list(spf.bind_compatible_string(record))
         bindformat = '<p><h1>BIND compatible format:</h1><pre>' + '\n'.join(bindformat) + '</pre></p>'
-        print(bindformat)
+        self.assertTrue(bindformat.count('(') == 1)
+        self.assertTrue(bindformat.count(')') == 1)
 
 
 class SettingsTests(unittest.TestCase):
