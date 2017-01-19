@@ -61,9 +61,7 @@ class FlattenerTests(unittest.TestCase):
         
     def test_bind_compatible_format_doesnt_dupe_parens(self):
         ips = self.fixtures['flattening']['ips']
-        ipblocks, lastrec = spf.separate_into_450bytes(ips)
-        ipblocks = [list(x) for x in ipblocks]
-        for x in spf.bind_compatible_string(ipblocks):
+        for x in spf.bind_compatible_string(ips):
             print(x)
 
 
