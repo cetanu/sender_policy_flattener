@@ -15,4 +15,4 @@ clean:
 	find . -name *.pyc -delete
 
 build:
-	python setup.py bdist_rpm --requires python-beautifulsoup4,python-schema,python-ipaddress,python-jinja2,python-yaml,python-requests
+	python setup.py bdist_rpm --requires TODO
