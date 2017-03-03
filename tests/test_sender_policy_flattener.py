@@ -1,40 +1,39 @@
+# coding=utf-8
 import unittest
 import json
 import random
-import re
 from string import printable
-import sender_policy_flattener as spf
+from sender_policy_flattener.crawler import SPFCrawler
+from sender_policy_flattener.regexes import dig_answer, ipv4, spf_ip, spf_txt_or_include
+from sender_policy_flattener.formatting import wrap_in_spf_tokens, format_rrecord_value_for_bind, sequence_hash
 
 
 class FlattenerTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        with open('fixtures.json') as f:
+        with open('tests/fixtures.json') as f:
             cls.fixtures = json.load(f)
-        cls.dns_answer = re.compile(r'ANSWER\n(?P<answers>[^;]+)')
-        cls.ip_address = re.compile(r'(?<=ip[46]:)\S+')
-        cls.a_record = re.compile(r'((?:\d{1,3}\.){3}\d{1,3})')
-        cls.spf_include = re.compile(r'(?P<type>include|a|mx(?: \d+)? ?|ptr|cname ?)[:](?P<hostname>[^\s\'\"]+\w)', flags=re.IGNORECASE)
         cls.response = cls.fixtures['dns_regex']['response']
         cls.answer = cls.fixtures['dns_regex']['answer_section']
+        cls.crawler = SPFCrawler(['8.8.8.8', '8.8.4.4'])
 
     def test_hashseq_produces_consistent_hash(self):
         jumbled = random.sample(printable, len(printable))
-        self.assertTrue(spf.hashed_sequence(jumbled) == spf.hashed_sequence(printable))
+        self.assertTrue(sequence_hash(jumbled) == sequence_hash(printable))
 
     def test_answer_section_is_extracted_from_dns_response(self):
         expected = self.fixtures['dns_regex']['answer_section']
-        match = self.dns_answer.search(self.response).group()
+        match = dig_answer.search(self.response).group()
         self.assertEqual(match, expected)
 
     def test_ipaddresses_are_extracted_from_regex_search(self):
         expected = self.fixtures['dns_regex']['ips']
-        match = self.ip_address.findall(self.answer)
+        match = spf_ip.findall(self.answer)
         self.assertEqual(match, expected)
 
     def test_a_records_are_extracted_from_regex_search(self):
         expected = self.fixtures['dns_regex']['a_record']
-        match = self.a_record.findall(self.answer)
+        match = ipv4.findall(self.answer)
         self.assertEqual(match, expected)
 
     # def test_cname_records_are_extracted_from_regex_search(self):
@@ -42,18 +41,18 @@ class FlattenerTests(unittest.TestCase):
 
     def test_includes_are_extracted_from_regex_search(self):
         expected = self.fixtures['dns_regex']['includes']
-        match = self.spf_include.findall(self.answer)  # Tuple(Tuple(Str, Str), ...)
+        match = spf_txt_or_include.findall(self.answer)  # Tuple(Tuple(Str, Str), ...)
         match = [list(l) for l in match]
         self.assertListEqual(match, expected)
 
     def test_ipaddresses_are_separated_correctly(self):
         ips = self.fixtures['flattening']['ips']
-        ipblocks, lastrec = spf.separate_into_450bytes(ips)
+        ipblocks, lastrec = self.crawler._split_at_450bytes(ips)
         ipblocks = [list(x) for x in ipblocks]
-        ipblocks = spf.hashed_sequence(repr(ipblocks))
+        ipblocks = sequence_hash(repr(ipblocks))
         
         expected_ipblocks = self.fixtures['flattening']['separated']
-        expected_ipblocks = spf.hashed_sequence(repr(expected_ipblocks))
+        expected_ipblocks = sequence_hash(repr(expected_ipblocks))
         expected_lastrec = self.fixtures['flattening']['lastrec']
         
         self.assertEqual(ipblocks, expected_ipblocks)        
@@ -61,10 +60,10 @@ class FlattenerTests(unittest.TestCase):
         
     def test_bind_compatible_format_doesnt_dupe_parens(self):
         ips = self.fixtures['flattening']['ips']
-        ipblocks, lastrec = spf.separate_into_450bytes(ips)
-        records = [record for record in spf.wrap_in_spf_tokens('unittest.com', ipblocks, lastrec)]
+        ipblocks, lastrec = self.crawler._split_at_450bytes(ips)
+        records = [record for record in wrap_in_spf_tokens('unittest.com', ipblocks, lastrec)]
         for record in records:
-            bindformat = '\n'.join(list(spf.bind_compatible_string(record)))
+            bindformat = '\n'.join(list(format_rrecord_value_for_bind(record)))
             print(bindformat)
             self.assertTrue(bindformat.count('(') == 1)
             self.assertTrue(bindformat.count(')') == 1)
@@ -73,7 +72,7 @@ class FlattenerTests(unittest.TestCase):
 class SettingsTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        with open('settings.json') as f:
+        with open('example/settings_example.json') as f:
             cls.settings = json.load(f)
 
     def test_settings_contains_min_details(self):

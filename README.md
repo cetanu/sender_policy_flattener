@@ -74,4 +74,4 @@ I've provided a `settings.json` file with an example configuration file.
 Example email format
 --------------------
 
-![Example screenshot](example/example.png)
+![Example screenshot](example/email_example.png)
