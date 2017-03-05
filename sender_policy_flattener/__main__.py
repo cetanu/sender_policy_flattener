@@ -92,8 +92,8 @@ if __name__ == "__main__":
         with open(args.config) as config:
             settings = json.load(config)
 
-    nameservers = settings.get('resolvers', None) or args.resolvers
     mailserver = settings.get('email', {}).get('server', None)
+    nameservers = settings.get('resolvers', None) or args.resolvers
     fromaddr = settings.get('email', {}).get('from', None) or args.fromaddr
     toaddr = settings.get('email', {}).get('to', None) or args.toaddr
     subject = settings.get('email', {}).get('subject', None) or args.subject
@@ -105,29 +105,23 @@ if __name__ == "__main__":
         raise ValueError('Subject must contain {zone}')
 
     spf = dict()
+    previous_result = None
     try:
         with open(output) as prev_hashes:
             previous_result = json.load(prev_hashes)
-            spf = flatten(
-                input_records=spf_domains,
-                lastresult=previous_result,
-                dns_servers=nameservers,
-                email_server=mailserver,
-                fromaddress=fromaddr,
-                toaddress=toaddr,
-                email_subject=subject
-            )
     except FileNotFoundError as e:
+        print(repr(e))
+    except Exception as e:
+        print(repr(e))
+    finally:
         spf = flatten(
             input_records=spf_domains,
+            lastresult=previous_result,
             dns_servers=nameservers,
             email_server=mailserver,
             fromaddress=fromaddr,
             toaddress=toaddr,
             email_subject=subject
         )
-    except Exception as e:
-        print(repr(e))
-    finally:
         with open(output, 'w+') as f:
             json.dump(spf, f, indent=4, sort_keys=True)
