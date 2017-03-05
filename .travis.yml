@@ -1,13 +1,13 @@
 language: python
 python:
-  - "2.6"
+  # - "2.6" # Fails on `unittest` module (some self.assert... methods unavailable for TestCase)
   - "2.7"
-  - "3.2"
+  # - "3.2" # Fails on dnspython, some kind of unicode issue
   - "3.3"
   - "3.4"
   - "3.5"
   - "3.6"
-  - "pypy"
-  - "pypy3"
+  # - "pypy"  # PyPy doesn't implement sys.getsizeof, which is what we use
+  # - "pypy3" #   to determine the size of the SPF record
 install: pip install -r requirements.txt
 script: nosetests --nocapture --verbose
