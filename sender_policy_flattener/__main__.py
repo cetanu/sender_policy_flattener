@@ -20,6 +20,11 @@ def parse_arguments():
         default='8.8.8.8,8.8.4.4', required=False)
 
     parser.add_argument(
+        '-e', '-mailserver', dest='mailserver',
+        help='Server to use for mailing alerts',
+        default=None, required=False)
+
+    parser.add_argument(
         '-t', '-to', dest='toaddr',
         help='Recipient address for email alert',
         default=None, required=False)
@@ -44,7 +49,35 @@ def parse_arguments():
         help='Name/path of output file',
         default='spf_sums.json', required=False)
 
-    return parser.parse_args()
+    arguments = parser.parse_args()
+
+    if arguments.config:
+        with open(arguments.config) as config:
+            settings = json.load(config)
+            arguments.resolvers = settings['resolvers']
+            arguments.toaddr = settings['email']['to']
+            arguments.fromaddr = settings['email']['from']
+            arguments.subject = settings['email']['subject']
+            arguments.mailserver = settings['email']['server']
+            arguments.domains = settings['sending domains']
+            arguments.output = settings['output']
+
+    required_non_config_args = all([
+        arguments.toaddr,
+        arguments.fromaddr,
+        arguments.subject,
+        arguments.mailserver,
+        arguments.domains,
+    ])
+
+    if not required_non_config_args:
+        parser.print_usage()
+        exit()
+
+    if '{zone}' not in args.subject:
+        raise ValueError('Subject must contain {zone}')
+
+    return arguments
 
 
 def flatten(input_records,
@@ -85,29 +118,10 @@ def flatten(input_records,
 
 if __name__ == "__main__":
     args = parse_arguments()
-
-    if not args.config:
-        settings = {}
-    else:
-        with open(args.config) as config:
-            settings = json.load(config)
-
-    mailserver = settings.get('email', {}).get('server', None)
-    nameservers = settings.get('resolvers', None) or args.resolvers
-    fromaddr = settings.get('email', {}).get('from', None) or args.fromaddr
-    toaddr = settings.get('email', {}).get('to', None) or args.toaddr
-    subject = settings.get('email', {}).get('subject', None) or args.subject
-
-    spf_domains = args.domains if args.domains else settings['sending domains'].items()
-    output = settings.get('output', None) or args.output
-
-    if '{zone}' not in subject:
-        raise ValueError('Subject must contain {zone}')
-
     spf = dict()
     previous_result = None
     try:
-        with open(output) as prev_hashes:
+        with open(args.output) as prev_hashes:
             previous_result = json.load(prev_hashes)
     except FileNotFoundError as e:
         print(repr(e))
@@ -115,13 +129,13 @@ if __name__ == "__main__":
         print(repr(e))
     finally:
         spf = flatten(
-            input_records=spf_domains,
+            input_records=args.domains,
             lastresult=previous_result,
-            dns_servers=nameservers,
-            email_server=mailserver,
-            fromaddress=fromaddr,
-            toaddress=toaddr,
-            email_subject=subject
+            dns_servers=args.resolvers,
+            email_server=args.mailserver,
+            fromaddress=args.fromaddr,
+            toaddress=args.toaddr,
+            email_subject=args.subject
         )
-        with open(output, 'w+') as f:
+        with open(args.output, 'w+') as f:
             json.dump(spf, f, indent=4, sort_keys=True)
