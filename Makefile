@@ -15,4 +15,4 @@ clean:
 	find . -name *.pyc -delete
 
 build:
-	python setup.py bdist_rpm --requires TODO
+	python setup.py bdist_rpm --requires python-dnspython,python-netaddr
