@@ -25,40 +25,46 @@ Python 2.7, or 3.3+ is required.
 
 Here's the usage:
 
-    usage: sender_policy_flattener.py [-h] [-c CONFIG] [-r RESOLVERS] [-t TOADDR]
-                                      [-f FROMADDR] [-s SUBJECT] [-d DOMAINS]
-                                      [-o OUTPUT]
-
+    usage:  python -m sender_policy_flattener [-h] [-c CONFIG] [-r RESOLVERS] [-e MAILSERVER] [-t TOADDR]
+                                              [-f FROMADDR] [-s SUBJECT] [-D SENDING_DOMAIN] [-d DOMAINS]
+                                              [-o OUTPUT]
+    
     optional arguments:
       -h, --help            show this help message and exit
       -c CONFIG, --config CONFIG
                             Name/path of JSON configuration file
       -r RESOLVERS, --resolvers RESOLVERS
                             Comma separated DNS servers to be used
+      -e MAILSERVER, -mailserver MAILSERVER
+                            Server to use for mailing alerts
       -t TOADDR, -to TOADDR
                             Recipient address for email alert
       -f FROMADDR, -from FROMADDR
                             Sending address for email alert
       -s SUBJECT, -subject SUBJECT
                             Subject string, must contain {zone}
+      -D SENDING_DOMAIN, --sending-domain SENDING_DOMAIN
+                            The domain which emails are being sent from
       -d DOMAINS, --domains DOMAINS
                             Comma separated domain:rrtype to flatten to IP
-                            addresses
+                            addresses. Imagine these are your SPF include
+                            statements.
       -o OUTPUT, --output OUTPUT
                             Name/path of output file
 
 Example
 
-    python sender_policy_flattener.py \
+    python -m sender_policy_flattener \
         --resolvers 8.8.8.8,8.8.4.4 \
         --to me@mydomain.com \
         --from admin@mydomain.com \
         --subject 'SPF for {zone} has changed!' \
-        --domains 'gmail.com:txt,sendgrid.com:txt,yahoo.com:a'
+        --domains gmail.com:txt,sendgrid.com:txt,yahoo.com:a \
+        --sending-domain mydomain.com
         
 or 
 
-    python sender_policy_flattener.py --config spf.json
+    python -m sender_policy_flattener --config spf.json
 
 You can specify a config file, or you can specify all of the optional arguments from the command line.
 
