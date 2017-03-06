@@ -74,7 +74,7 @@ def parse_arguments():
         parser.print_usage()
         exit()
 
-    if '{zone}' not in args.subject:
+    if '{zone}' not in arguments.subject:
         raise ValueError('Subject must contain {zone}')
 
     return arguments
