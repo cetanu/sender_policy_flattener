@@ -33,7 +33,7 @@ _email_style = '''
 
 def email_changes(zone, prev_addrs, curr_addrs, subject, server, fromaddr, toaddr):
     bindformat = list()
-    for record in curr_addrs['records']:
+    for record in curr_addrs:
         bindformat += list(format_rrecord_value_for_bind(record))
     bindformat = '<p><h1>BIND compatible format:</h1><pre>' + '\n'.join(bindformat) + '</pre></p>'
 

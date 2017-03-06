@@ -40,8 +40,13 @@ def parse_arguments():
         default=None, required=False)
 
     parser.add_argument(
+        '-D', '--sending-domain', dest='sending_domain',
+        help='The domain which emails are being sent from',
+        default=None, required=False)
+
+    parser.add_argument(
         '-d', '--domains', dest='domains',
-        help='Comma separated domain:rrtype to flatten to IP addresses',
+        help='Comma separated domain:rrtype to flatten to IP addresses. Imagine these are your SPF include statements.',
         default=None, required=False)
 
     parser.add_argument(
@@ -50,6 +55,12 @@ def parse_arguments():
         default='spf_sums.json', required=False)
 
     arguments = parser.parse_args()
+
+    if arguments.sending_domain:
+        spf_includes = [x.split(':') for x in str(arguments.domains).split(',')]
+        arguments.domains = {
+            arguments.sending_domain: {d[0]: d[1] for d in spf_includes}
+        }
 
     if arguments.config:
         with open(arguments.config) as config:
@@ -71,7 +82,7 @@ def parse_arguments():
     ])
 
     if not required_non_config_args:
-        parser.print_usage()
+        parser.print_help()
         exit()
 
     if '{zone}' not in arguments.subject:
@@ -90,7 +101,7 @@ def flatten(input_records,
 
     current = dict()
     crawler = SPFCrawler(dns_servers)
-    for domain, spf_targets in input_records:
+    for domain, spf_targets in input_records.items():
         records = crawler.spf2ips(spf_targets, domain)
         hashsum = sequence_hash(records)
 

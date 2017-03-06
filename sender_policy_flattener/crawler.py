@@ -11,6 +11,10 @@ from sender_policy_flattener.regexes import ipv4, spf_ip, spf_txt_or_include, di
 class SPFCrawler:
     def __init__(self, nameservers):
         self.ns = resolver.Resolver()
+        if ',' in nameservers:
+            nameservers = nameservers.split(',')
+        if isinstance(nameservers, str):
+            nameservers = [nameservers]
         self.ns.nameservers = nameservers
 
     @staticmethod
