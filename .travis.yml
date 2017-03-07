@@ -1,4 +1,5 @@
 language: python
+cache: pip  
 python:
   # - "2.6" # Fails on `unittest` module (some self.assert... methods unavailable for TestCase)
   - "2.7"
@@ -7,7 +8,13 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
-  # - "pypy"  # PyPy doesn't implement sys.getsizeof, which is what we use
-  # - "pypy3" #   to determine the size of the SPF record
+  - "3.6-dev"
+# - "pypy"  # PyPy doesn't implement sys.getsizeof, which is what we use
+# - "pypy3" #   to determine the size of the SPF record
+
+matrix:  
+  allow_failures:
+    python: "3.6-dev"
+    
 install: pip install -r requirements.txt
 script: nosetests --nocapture --verbose
