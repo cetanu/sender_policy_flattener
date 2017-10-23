@@ -8,7 +8,6 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
-  - "3.6-dev"
   - "3.7"
 # - "pypy"  # PyPy doesn't implement sys.getsizeof, which is what we use
 # - "pypy3" #   to determine the size of the SPF record
