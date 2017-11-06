@@ -5,7 +5,7 @@ sender_policy_flattener
 
 We had a problem in our organisation that caused our SPF records to become invalid:
 
-When customers computers were querying our SPF records, there were more than 10 lookups required after following all of the `include:` remarks.
+When customers computers were querying our SPF records, there were more than 10 lookups required after following all of the ``include:`` remarks.
 
 Solution? Query them ourselves, and create a much more condense list of SPF records.
 
@@ -91,13 +91,15 @@ Example
            --domains gmail.com:txt,sendgrid.com:txt,yahoo.com:a \
            --sending-domain mydomain.com
         
-or 
+or
+
+.. code:: shell
 
     spflat --config spf.json
 
 You can specify a config file, or you can specify all of the optional arguments from the command line.
 
-I've provided a `settings.json` file with an example configuration file.
+I've provided a ``settings.json`` file with an example configuration file.
 
 
 3rd party dependencies
