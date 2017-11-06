@@ -18,6 +18,22 @@ When the hashsum of your IP Addresses changes, it will send out an email (or jus
 
 You could theoretically extract the flat IP records from the resulting JSON file and automatically update your DNS configuration with it.
 
+How do I install it?
+--------------------
+
+### via git clone
+
+Clone this repo and run 
+
+    pip install -r requirements.txt
+    python setup.py install
+
+You can also do this from within a virtualenv if that tickles your fancy (I recommend it).
+
+### via pip
+
+    pip install sender_policy_flattener
+
 How do I use it?
 ----------------
 
@@ -25,9 +41,13 @@ Python 2.7, or 3.3+ is required.
 
 Here's the usage:
 
-    usage:  python -m sender_policy_flattener [-h] [-c CONFIG] [-r RESOLVERS] [-e MAILSERVER] [-t TOADDR]
-                                              [-f FROMADDR] [-s SUBJECT] [-D SENDING_DOMAIN] [-d DOMAINS]
-                                              [-o OUTPUT]
+    usage: spflat [-h] [-c CONFIG] [-r RESOLVERS] [-e MAILSERVER] [-t TOADDR]
+                  [-f FROMADDR] [-s SUBJECT] [-D SENDING_DOMAIN] [-d DOMAINS]
+                  [-o OUTPUT]
+    
+    A script that crawls and compacts SPF records into IP networks. This helps to
+    avoid exceeding the DNS lookup limit of the Sender Policy Framework (SPF)
+    https://tools.ietf.org/html/rfc7208#section-4.6.4
     
     optional arguments:
       -h, --help            show this help message and exit
@@ -54,17 +74,16 @@ Here's the usage:
 
 Example
 
-    python -m sender_policy_flattener \
-        --resolvers 8.8.8.8,8.8.4.4 \
-        --to me@mydomain.com \
-        --from admin@mydomain.com \
-        --subject 'SPF for {zone} has changed!' \
-        --domains gmail.com:txt,sendgrid.com:txt,yahoo.com:a \
-        --sending-domain mydomain.com
+    spflat --resolvers 8.8.8.8,8.8.4.4 \
+           --to me@mydomain.com \
+           --from admin@mydomain.com \
+           --subject 'SPF for {zone} has changed!' \
+           --domains gmail.com:txt,sendgrid.com:txt,yahoo.com:a \
+           --sending-domain mydomain.com
         
 or 
 
-    python -m sender_policy_flattener --config spf.json
+    spflat --config spf.json
 
 You can specify a config file, or you can specify all of the optional arguments from the command line.
 

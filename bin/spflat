@@ -1,14 +1,17 @@
 # coding=utf-8
-import argparse
+"""
+A script that crawls and compacts SPF records into IP networks.
+This helps to avoid exceeding the DNS lookup limit of the Sender Policy Framework (SPF)
+https://tools.ietf.org/html/rfc7208#section-4.6.4
+"""
 import json
-
-from sender_policy_flattener.crawler import SPFCrawler
-from sender_policy_flattener.formatting import sequence_hash
-from sender_policy_flattener.email_utils import email_changes
+import argparse
+from sender_policy_flattener import main
 
 
+# noinspection PyMissingOrEmptyDocstring
 def parse_arguments():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         '-c', '--config', dest='config',
         help='Name/path of JSON configuration file',
@@ -55,13 +58,11 @@ def parse_arguments():
         default='spf_sums.json', required=False)
 
     arguments = parser.parse_args()
-
     if arguments.sending_domain:
         spf_includes = [x.split(':') for x in str(arguments.domains).split(',')]
         arguments.domains = {
             arguments.sending_domain: {d[0]: d[1] for d in spf_includes}
         }
-
     if arguments.config:
         with open(arguments.config) as config:
             settings = json.load(config)
@@ -72,7 +73,6 @@ def parse_arguments():
             arguments.mailserver = settings['email']['server']
             arguments.domains = settings['sending domains']
             arguments.output = settings['output']
-
     required_non_config_args = all([
         arguments.toaddr,
         arguments.fromaddr,
@@ -80,73 +80,14 @@ def parse_arguments():
         arguments.mailserver,
         arguments.domains,
     ])
-
     if not required_non_config_args:
         parser.print_help()
         exit()
-
     if '{zone}' not in arguments.subject:
         raise ValueError('Subject must contain {zone}')
-
     return arguments
 
 
-def flatten(input_records,
-            dns_servers, email_server,
-            email_subject, fromaddress, toaddress,
-            lastresult=None):
-
-    if lastresult is None:
-        lastresult = dict()
-
-    current = dict()
-    crawler = SPFCrawler(dns_servers)
-    for domain, spf_targets in input_records.items():
-        records = crawler.spf2ips(spf_targets, domain)
-        hashsum = sequence_hash(records)
-
-        current[domain] = {
-            'sum': hashsum,
-            'records': records
-        }
-
-        if lastresult.get(domain, False) and current.get(domain, False):
-            previous_sum = lastresult[domain]['sum']
-            current_sum = current[domain]['sum']
-
-            if previous_sum != current_sum:
-                email_changes(
-                    zone=domain,
-                    prev_addrs=lastresult[domain]['records'],
-                    curr_addrs=current[domain]['records'],
-                    subject=email_subject,
-                    server=email_server,
-                    fromaddr=fromaddress,
-                    toaddr=toaddress,
-                )
-    return current
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     args = parse_arguments()
-    spf = dict()
-    previous_result = None
-    try:
-        with open(args.output) as prev_hashes:
-            previous_result = json.load(prev_hashes)
-    except FileNotFoundError as e:
-        print(repr(e))
-    except Exception as e:
-        print(repr(e))
-    finally:
-        spf = flatten(
-            input_records=args.domains,
-            lastresult=previous_result,
-            dns_servers=args.resolvers,
-            email_server=args.mailserver,
-            fromaddress=args.fromaddr,
-            toaddress=args.toaddr,
-            email_subject=args.subject
-        )
-        with open(args.output, 'w+') as f:
-            json.dump(spf, f, indent=4, sort_keys=True)
+    main(args)
