@@ -39,6 +39,14 @@ via pip
 .. code:: shell
 
     pip install sender_policy_flattener
+    
+this package also supports RPM builds
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. code:: shell
+
+    yum -y install rpm-build
+    python setup.py bdist_rpm
 
 How do I use it?
 ----------------
