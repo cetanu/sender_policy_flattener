@@ -5,7 +5,7 @@ from difflib import HtmlDiff
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-from sender_policy_flattener.formatting import format_rrecord_value_for_bind
+from sender_policy_flattener.formatting import format_records_for_email
 from sender_policy_flattener.regexes import spf_token
 
 
@@ -32,11 +32,7 @@ _email_style = '''
 
 
 def email_changes(zone, prev_addrs, curr_addrs, subject, server, fromaddr, toaddr):
-    bindformat = list()
-    for record in curr_addrs:
-        bindformat += list(format_rrecord_value_for_bind(record))
-    bindformat = '<p><h1>BIND compatible format:</h1><pre>' + '\n'.join(bindformat) + '</pre></p>'
-
+    bindformat = format_records_for_email(curr_addrs)
     prev_addrs = ' '.join(prev_addrs)
     curr_addrs = ' '.join(curr_addrs)
     prev = sorted([s for s in prev_addrs.split() if not spf_token.search(s)])

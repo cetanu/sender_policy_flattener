@@ -5,7 +5,7 @@ import random
 from string import printable
 from sender_policy_flattener.crawler import SPFCrawler
 from sender_policy_flattener.regexes import dig_answer, ipv4, spf_ip, spf_txt_or_include
-from sender_policy_flattener.formatting import wrap_in_spf_tokens, format_rrecord_value_for_bind, sequence_hash
+from sender_policy_flattener.formatting import wrap_in_spf_tokens, format_records_for_email, sequence_hash
 
 
 class FlattenerTests(unittest.TestCase):
@@ -60,13 +60,12 @@ class FlattenerTests(unittest.TestCase):
         
     def test_bind_compatible_format_doesnt_dupe_parens(self):
         ips = self.fixtures['flattening']['ips']
+        expected_num_of_records = len(self.fixtures['flattening']['separated'])
         ipblocks, lastrec = self.crawler._split_at_450bytes(ips)
         records = [record for record in wrap_in_spf_tokens('unittest.com', ipblocks, lastrec)]
-        for record in records:
-            bindformat = '\n'.join(list(format_rrecord_value_for_bind(record)))
-            print(bindformat)
-            self.assertTrue(bindformat.count('(') == 1)
-            self.assertTrue(bindformat.count(')') == 1)
+        bindformat = format_records_for_email(records)
+        self.assertEqual(bindformat.count('('), expected_num_of_records)
+        self.assertEqual(bindformat.count(')'), expected_num_of_records)
 
 
 class SettingsTests(unittest.TestCase):

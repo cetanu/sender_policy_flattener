@@ -30,3 +30,18 @@ def format_rrecord_value_for_bind(spfrec):
 def sequence_hash(iterable):
     flat_sorted_sequence = ' '.join(sorted([token for string in iterable for token in string.split()]))
     return hashlib.sha256(flat_sorted_sequence.encode()).hexdigest()
+
+
+def format_records_for_email(curr_addrs):
+    bindformat = list()
+    for record in curr_addrs:
+        bindformat += format_rrecord_value_for_bind(record)
+
+    count = 0
+    for index, chunk in enumerate(bindformat):
+        if '(' in chunk:
+            bindformat[index] = '@ IN TXT (' if count == 0 else 'spf{0} IN TXT ('.format(count)
+            count += 1
+
+    bindformat = '<p><h1>BIND compatible format:</h1><pre>' + '\n'.join(bindformat) + '</pre></p>'
+    return bindformat
