@@ -8,6 +8,26 @@ from sender_policy_flattener.formatting import wrap_in_spf_tokens
 from sender_policy_flattener.regexes import ipv4, spf_ip, spf_txt_or_include, dig_answer
 
 
+if 'FileNotFoundError' not in locals():
+    FileNotFoundError = IOError
+
+
+def sanitize(s):
+    s = str(s)
+    s = s.replace('"', '')
+    return s
+
+
+def ips_to_spf_strings(ips):
+    ips = [sanitize(s) for s in ips]
+    ips = [i for i in IPSet(ips).iter_cidrs()]
+    ips = [sanitize(s) for s in ips]
+    ips = ['ip6:' + ip if ':' in ip else
+           'ip4:' + ip.replace('/32', '')
+           for ip in ips]
+    return ips
+
+
 class SPFCrawler:
     def __init__(self, nameservers):
         self.ns = resolver.Resolver()
@@ -30,10 +50,7 @@ class SPFCrawler:
         for rrecord, rdtype in records.items():
             for ip in self._crawl(rrecord, rdtype):
                 ips.add(ip)
-        ips = [str(s) for s in IPSet(ips).iter_cidrs()]
-        ips = ['ip6:' + ip if ':' in ip else
-               'ip4:' + ip.replace('/32', '')
-               for ip in ips]
+        ips = ips_to_spf_strings(ips)
         ipv4blocks, last_record = self._split_at_450bytes(ips)
         return [record for record in wrap_in_spf_tokens(domain, ipv4blocks, last_record)]
 
