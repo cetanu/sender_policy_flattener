@@ -4,6 +4,9 @@ from sender_policy_flattener.crawler import SPFCrawler
 from sender_policy_flattener.formatting import sequence_hash
 from sender_policy_flattener.email_utils import email_changes
 
+if 'FileNotFoundError' not in locals():
+    FileNotFoundError = IOError
+
 
 def flatten(input_records,
             dns_servers, email_server,
@@ -37,7 +40,6 @@ def flatten(input_records,
 
 
 def main(args):
-    spf = dict()
     previous_result = None
     try:
         with open(args.output) as prev_hashes:
