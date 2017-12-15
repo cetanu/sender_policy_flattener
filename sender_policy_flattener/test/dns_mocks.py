@@ -17,10 +17,19 @@ first_answer = ' '.join([
     '-all"',
 ])
 
+lots_of_blocks = ['ip4:{0}.{1}.{2}.{3}/{4}'.format(o1, o2, o3, o4, p)
+                  for o1 in range(5, 10)
+                  for o2 in range(1, 5)
+                  for o3 in range(1, 5)
+                  for o4 in range(1, 5)
+                  for p in range(26, 31)]
+large_answer = '"v=spf1 {0} -all"'.format(' '.join(lots_of_blocks))
+
 dns_responses = {
     'txt': {
         'test.com': [first_answer],
-        'spf.fake.test': ['v=spf1 ip4:172.16.0.1 ip4:172.16.0.0/24 ip4:172.16.0.1/32']
+        'galactus.com': [large_answer],
+        'spf.fake.test': ['v=spf1 ip4:172.16.0.1 ip4:172.16.0.0/24 ip4:172.16.0.1/32'],
     },
     'a': {
         'test.fake': [

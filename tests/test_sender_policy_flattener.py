@@ -12,6 +12,7 @@ from sender_policy_flattener.handlers import *
 
 mocked_dns_object = 'sender_policy_flattener.crawler.resolver.Resolver.query'
 expected_hash = '764567b38af1d413b346fd08df026e07bbcab6e70f73b039144900cc55fee1eb'
+expected_large_hash = '103c78c52ee89aab2f55a32337d942191589c41613ab312279d050b63e774334'
 
 
 def MockDNSQuery(*args, **kwargs):
@@ -171,6 +172,30 @@ class SenderPolicyFlattenerTests(unittest.TestCase):
             'test.com': {
                 'records': expected_records,
                 'sum': expected_hash
+            }
+        }
+        self.assertEqual(expected, actual)
+
+    @mock.patch(mocked_dns_object, side_effect=MockDNSQuery)
+    @mock.patch('sender_policy_flattener.email_utils.smtplib', side_effect=MockSmtplib)
+    def test_call_main_flatten_func_on_large_spf_records(self, query, smtp):
+        actual = flatten(
+            input_records={
+                'test.com': {
+                    'galactus.com': 'txt'
+                }
+            },
+            dns_servers=['8.8.8.8'],
+            email_server='mocked',
+            email_subject='{zone} has changed',
+            fromaddress='mocked',
+            toaddress='mocked',
+        )
+        expected_records = spf2ips({'galactus.com': 'txt'}, 'test.com')
+        expected = {
+            'test.com': {
+                'records': expected_records,
+                'sum': expected_large_hash
             }
         }
         self.assertEqual(expected, actual)
