@@ -9,7 +9,7 @@ def readme():
 
 setup(
     name='sender_policy_flattener',
-    version='0.1.5',
+    version='0.2.0',
     packages=['sender_policy_flattener'],
     long_description=readme(),
     classifiers=[
