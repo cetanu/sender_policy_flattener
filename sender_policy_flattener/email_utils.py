@@ -62,3 +62,4 @@ def email_changes(zone, prev_addrs, curr_addrs, subject, server, fromaddr, toadd
         print('Email failed: ' + str(err))
         with open('result.html', 'w+') as mailfile:
             mailfile.write(html.as_string())
+    return email.as_string()

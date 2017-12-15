@@ -28,7 +28,7 @@ def ips_to_spf_strings(ips):
     return ips
 
 
-class SPFCrawler:
+class SPFCrawler(object):
     def __init__(self, nameservers):
         self.ns = resolver.Resolver()
         if ',' in nameservers:
