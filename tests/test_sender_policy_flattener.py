@@ -2,15 +2,17 @@
 import unittest
 import mock
 from sender_policy_flattener import flatten
-from sender_policy_flattener.crawler import crawl
+from sender_policy_flattener.crawler import crawl, spf2ips, default_resolvers
 from sender_policy_flattener.email_utils import email_changes
 from sender_policy_flattener.test.dns_mocks import dns_responses
 from sender_policy_flattener.test.ip_fixtures import test_com_netblocks
 from sender_policy_flattener.test.email_fmts import expected_final_email
 from sender_policy_flattener.mechanisms import tokenize
+from sender_policy_flattener.handlers import *
 
+mocked_dns_object = 'sender_policy_flattener.crawler.resolver.Resolver.query'
+expected_hash = '764567b38af1d413b346fd08df026e07bbcab6e70f73b039144900cc55fee1eb'
 
-expected_hash = 'c8fdf498bf282b7cd5ec563e4df2b2cdc609f7f69aa1f7acf6c97974d82eaa0c'
 
 def MockDNSQuery(*args, **kwargs):
     rrecord, rrtype = args
@@ -27,6 +29,66 @@ def MockSmtplib(*args, **kwargs):
             def sendmail():
                 return True
     return MockResponse()
+
+
+class HandlerTests(unittest.TestCase):
+    @mock.patch(mocked_dns_object, side_effect=MockDNSQuery)
+    def test_ip(self, query):
+        actual = [str(s) for s in handle_ip('172.16.0.1', 'test.com', default_resolvers)]
+        expected = ['172.16.0.1']
+        self.assertEqual(expected, actual)
+
+    @mock.patch(mocked_dns_object, side_effect=MockDNSQuery)
+    def test_mx(self, query):
+        actual = [str(s) for s in handle_mx(('mx', 'mx'), 'test.com', default_resolvers)]
+        expected = ['192.168.0.10']
+        self.assertEqual(expected, actual)
+
+    @mock.patch(mocked_dns_object, side_effect=MockDNSQuery)
+    def test_mx_prefix(self, query):
+        actual = [str(s) for s in handle_mx_prefix(['mx', '29'], 'test.com', default_resolvers)]
+        expected = ['192.168.0.10/29']
+        self.assertEqual(expected, actual)
+
+    @mock.patch(mocked_dns_object, side_effect=MockDNSQuery)
+    def test_mx_domain(self, query):
+        actual = [str(s) for s in handle_mx_domain('test.fake', 'test.com', default_resolvers)]
+        expected = ['10.0.0.12',
+                    '10.0.0.13']
+        self.assertEqual(expected, actual)
+
+    @mock.patch(mocked_dns_object, side_effect=MockDNSQuery)
+    def test_mx_domain_prefix(self, query):
+        actual = [str(s) for s in handle_mx_domain_prefix(['test.fake', '27'], 'test.com', default_resolvers)]
+        expected = ['10.0.0.12/27',
+                    '10.0.0.13/27']
+        self.assertEqual(expected, actual)
+
+    @mock.patch(mocked_dns_object, side_effect=MockDNSQuery)
+    def test_a(self, query):
+        actual = [str(s) for s in handle_a(('a', 'a'), 'test.com', default_resolvers)]
+        expected = ['192.168.0.1']
+        self.assertEqual(expected, actual)
+
+    @mock.patch(mocked_dns_object, side_effect=MockDNSQuery)
+    def test_a_domain(self, query):
+        actual = [str(s) for s in handle_a_domain('test.fake', 'test.com', default_resolvers)]
+        expected = ['10.0.0.10',
+                    '10.0.0.11']
+        self.assertEqual(expected, actual)
+
+    @mock.patch(mocked_dns_object, side_effect=MockDNSQuery)
+    def test_a_domain_prefix(self, query):
+        actual = [str(s) for s in handle_a_domain_prefix(['test.fake', '24'], 'test.com', default_resolvers)]
+        expected = ['10.0.0.10/24',
+                    '10.0.0.11/24']
+        self.assertEqual(expected, actual)
+
+    @mock.patch(mocked_dns_object, side_effect=MockDNSQuery)
+    def test_a_prefix(self, query):
+        actual = [str(s) for s in handle_a_prefix(['a', '26'], 'test.com', default_resolvers)]
+        expected = ['192.168.0.1/26']
+        self.assertEqual(expected, actual)
 
 
 class MechanismTests(unittest.TestCase):
@@ -84,47 +146,48 @@ class MechanismTests(unittest.TestCase):
 
 
 class SenderPolicyFlattenerTests(unittest.TestCase):
-    @mock.patch('sender_policy_flattener.crawler.resolver.Resolver.query', side_effect=MockDNSQuery)
+    @mock.patch(mocked_dns_object, side_effect=MockDNSQuery)
     def test_crawler_returns_all_expected_ips(self, query):
-        actual = list(crawl('test.com', 'txt', 'sender.com'))
+        actual = [str(s) for s in crawl('test.com', 'txt', 'test.com')]
         self.assertEqual(test_com_netblocks, actual)
 
-    # @mock.patch('sender_policy_flattener.crawler.resolver.Resolver.query', side_effect=MockDNSQuery)
-    # @mock.patch('sender_policy_flattener.email_utils.smtplib', side_effect=MockSmtplib)
-    # def test_call_main_flatten_func(self, query, smtp):
-    #     actual = flatten(
-    #         input_records={
-    #             'sender.domain.com': {
-    #                 'test.com': 'txt'
-    #             }
-    #         },
-    #         dns_servers=['notused'],
-    #         email_server='mocked',
-    #         email_subject='{zone} has changed',
-    #         fromaddress='mocked',
-    #         toaddress='mocked',
-    #     )
-    #     expected_records = self.crawler.spf2ips({'test.com': 'txt'}, 'sender.domain.com')
-    #     expected = {
-    #         'sender.domain.com': {
-    #             'records': expected_records,
-    #             'sum': expected_hash
-    #         }
-    #     }
-    #     self.assertEqual(expected, actual)
-    #
-    # @mock.patch('sender_policy_flattener.crawler.resolver.Resolver.query', side_effect=MockDNSQuery)
-    # @mock.patch('sender_policy_flattener.email_utils.smtplib', side_effect=MockSmtplib)
-    # def test_bind_format_doesnt_dupe_parenthesis(self, query, smtp):
-    #     expected_records = self.crawler.spf2ips({'test.com': 'txt'}, 'sender.domain.com')
-    #     actual = email_changes(
-    #         zone='sender.domain.com',
-    #         prev_addrs=[],
-    #         curr_addrs=expected_records,
-    #         subject='{zone} has changed',
-    #         server='mocked',
-    #         fromaddr='mocked',
-    #         toaddr='mocked',
-    #         test=True,
-    #     )
-    #     self.assertEqual(expected_final_email, actual)
+    @mock.patch(mocked_dns_object, side_effect=MockDNSQuery)
+    @mock.patch('sender_policy_flattener.email_utils.smtplib', side_effect=MockSmtplib)
+    def test_call_main_flatten_func(self, query, smtp):
+        actual = flatten(
+            input_records={
+                'test.com': {
+                    'test.com': 'txt'
+                }
+            },
+            dns_servers=['8.8.8.8'],
+            email_server='mocked',
+            email_subject='{zone} has changed',
+            fromaddress='mocked',
+            toaddress='mocked',
+        )
+        expected_records = spf2ips({'test.com': 'txt'}, 'test.com')
+        expected = {
+            'test.com': {
+                'records': expected_records,
+                'sum': expected_hash
+            }
+        }
+        self.assertEqual(expected, actual)
+
+    @mock.patch(mocked_dns_object, side_effect=MockDNSQuery)
+    @mock.patch('sender_policy_flattener.email_utils.smtplib', side_effect=MockSmtplib)
+    def test_bind_format_has_one_pair_of_parens_per_record(self, query, smtp):
+        expected_records = spf2ips({'test.com': 'txt'}, 'test.com')
+        actual = email_changes(
+            zone='test.com',
+            prev_addrs=[],
+            curr_addrs=expected_records,
+            subject='{zone} has changed',
+            server='mocked',
+            fromaddr='mocked',
+            toaddr='mocked',
+            test=True,
+        )
+        self.assertEqual(actual.count('('), actual.count('IN TXT'))
+        self.assertEqual(actual.count(')'), actual.count('IN TXT'))

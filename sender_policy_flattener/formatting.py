@@ -1,7 +1,7 @@
 # coding=utf-8
 import hashlib
 import sys
-from netaddr import IPSet
+from netaddr import IPSet, IPAddress, IPNetwork, AddrFormatError
 
 
 def wrap_in_spf_tokens(domain, ipv4blocks, last_record):
@@ -56,13 +56,19 @@ def sanitize(s):
 
 
 def ips_to_spf_strings(ips):
-    ips = [sanitize(s) for s in ips]
-    ips = [i for i in IPSet(ips).iter_cidrs()]
-    ips = [sanitize(s) for s in ips]
+    other_tokens = list()
+    for index, ip in enumerate(ips):
+        try:
+            IPNetwork(ip)
+        except AddrFormatError:
+            other_tokens.append(ip)
+    for token in other_tokens:
+        ips.remove(token)
+    ips = [str(i) for i in IPSet(ips).iter_cidrs()]
     ips = ['ip6:' + ip if ':' in ip else
            'ip4:' + ip.replace('/32', '')
            for ip in ips]
-    return ips
+    return ips + other_tokens
 
 
 def spf_record_len(addresses):
