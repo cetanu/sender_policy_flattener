@@ -2,10 +2,10 @@
 import sys
 
 from dns import resolver  # dnspython/3
-from netaddr import IPSet
+from netaddr import IPSet, IPNetwork
 
 from sender_policy_flattener.formatting import wrap_in_spf_tokens
-from sender_policy_flattener.regexes import ipv4, spf_ip, spf_txt_or_include, dig_answer
+from sender_policy_flattener.mechanisms import tokenize
 
 
 if 'FileNotFoundError' not in locals():
@@ -68,39 +68,60 @@ class SPFCrawler(object):
         last_record = len(ipv4blocks) - 1
         return ipv4blocks, last_record
 
-    def _crawl(self, rrecord, rrtype):
+    def _crawl(self, rrname, rrtype, domain):
         try:
-            # This query takes up 85% of execution time
-            result = self.ns.query(rrecord, rrtype).response.to_text()
-            result = result.replace('" "', '')
+            answers = self.ns.query(rrname, rrtype)
         except Exception as err:
-            print(repr(err), rrecord, rrtype)
+            print(repr(err), rrname, rrtype)
         else:
-            match = dig_answer.search(result)
-            answers = match.group('answers')
-            if rrtype == 'a':
-                addresses = ipv4.findall(answers)
-            elif rrtype == 'cname':
-                name = answers.split()
-                if len(name):
-                    name = str(name[-1]).rstrip('.')
-                    addresses = self._crawl(name, 'a')
-                else:
-                    addresses = []
-            else:
-                addresses = spf_ip.findall(answers)
+            for answer in answers:
+                for pair in tokenize(answer):
+                    rname, rtype = pair
+                    if rtype == 'ip':
+                        yield rname
+                        continue
 
-            includes = spf_txt_or_include.findall(answers)
 
-            for ip in addresses:
-                if rrtype == 'a' and '/' not in ip:
-                    ip += '/32'
-                yield ip
-
-            if includes:
-                for includetype, hostname in includes:
-                    includetype = includetype.lower().strip(' 1234567890')  # Remove priority info from mx records
-                    includetype = includetype.replace('include', 'txt')
-                    includetype = includetype.replace('ptr', 'cname')
-                    for ip in self._crawl(hostname, includetype):
-                        yield ip
+    # def _crawl(self, rrecord, rrtype):
+    #     try:
+    #         # This query takes up 85% of execution time
+    #         query = self.ns.query(rrecord, rrtype)
+    #         result = query.response.to_text()
+    #         result = result.replace('" "', '')
+    #     except Exception as err:
+    #         print(repr(err), rrecord, rrtype)
+    #     else:
+    #         match = dig_answer.search(result)
+    #         answers = match.group('answers')
+    #
+    #         addresses = list()
+    #         addresses += ipv4.findall(answers)
+    #         addresses += ip.findall(answers)
+    #
+    #         if rrtype == 'cname':
+    #             name = answers.split()
+    #             if len(name):
+    #                 name = str(name[-1]).rstrip('.')
+    #                 addresses = self._crawl(name, 'a')
+    #             else:
+    #                 addresses = []
+    #         if rrtype == 'mx':
+    #             yield {
+    #                 'query': query,
+    #                 'response': query.response,
+    #                 'list': [x for x in query]
+    #             }
+    #
+    #         includes = spf_txt_or_include.findall(answers)
+    #
+    #         for ip in addresses:
+    #             if rrtype == 'a' and '/' not in ip:
+    #                 ip += '/32'
+    #             yield ip
+    #
+    #         if includes:
+    #             for includetype, hostname in includes:
+    #                 includetype = includetype.lower().strip(' 1234567890')  # Remove priority info from mx records
+    #                 includetype = includetype.replace('include', 'txt')
+    #                 for ip in self._crawl(hostname, includetype):
+    #                     yield ip
