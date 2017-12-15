@@ -49,12 +49,6 @@ def format_records_for_email(curr_addrs):
     return bindformat
 
 
-def sanitize(s):
-    s = str(s)
-    s = s.replace('"', '')
-    return s
-
-
 def ips_to_spf_strings(ips):
     other_tokens = list()
     for index, ip in enumerate(ips):
