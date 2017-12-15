@@ -1,12 +1,12 @@
 # coding=utf-8
 import unittest
 import mock
-import random
-from string import printable
 from sender_policy_flattener import flatten
 from sender_policy_flattener.crawler import SPFCrawler
+from sender_policy_flattener.email_utils import email_changes
 from sender_policy_flattener.test.dns_mocks import dns_responses
 from sender_policy_flattener.test.ip_fixtures import test_com_netblocks
+from sender_policy_flattener.test.email_fmts import expected_final_email
 
 
 expected_hash = '96e230215f3c3906016794f0f2d7d32306e152095fc6f4d09ea0bcbc116044e3'
@@ -66,3 +66,19 @@ class SenderPolicyFlattenerTests(unittest.TestCase):
             }
         }
         self.assertEqual(result, expected_result)
+
+    @mock.patch('sender_policy_flattener.crawler.resolver.Resolver.query', side_effect=MockDNSQuery)
+    @mock.patch('sender_policy_flattener.email_utils.smtplib', side_effect=MockSmtplib)
+    def test_bind_format_doesnt_dupe_parenthesis(self, query, smtp):
+        expected_records = self.crawler.spf2ips({'test.com': 'txt'}, 'sender.domain.com')
+        result = email_changes(
+            zone='sender.domain.com',
+            prev_addrs=[],
+            curr_addrs=expected_records,
+            subject='{zone} has changed',
+            server='mocked',
+            fromaddr='mocked',
+            toaddr='mocked',
+            test=True,
+        )
+        self.assertEqual(result, expected_final_email)
