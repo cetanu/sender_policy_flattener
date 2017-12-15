@@ -6,7 +6,6 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 from sender_policy_flattener.formatting import format_records_for_email
-from sender_policy_flattener.regexes import spf_token
 
 
 _email_style = '''
@@ -35,8 +34,8 @@ def email_changes(zone, prev_addrs, curr_addrs, subject, server, fromaddr, toadd
     bindformat = format_records_for_email(curr_addrs)
     prev_addrs = ' '.join(prev_addrs)
     curr_addrs = ' '.join(curr_addrs)
-    prev = sorted([s for s in prev_addrs.split() if not spf_token.search(s)])
-    curr = sorted([s for s in curr_addrs.split() if not spf_token.search(s)])
+    prev = sorted([s for s in prev_addrs.split() if 'ip' in s])
+    curr = sorted([s for s in curr_addrs.split() if 'ip' in s])
 
     diff = HtmlDiff()
     table = diff.make_table(
