@@ -1,6 +1,7 @@
 # coding=utf-8
 import json
-from sender_policy_flattener.crawler import spf2ips
+from dns.resolver import Resolver
+from sender_policy_flattener.crawler import spf2ips, crawl
 from sender_policy_flattener.formatting import sequence_hash
 from sender_policy_flattener.email_utils import email_changes
 
@@ -11,11 +12,13 @@ if 'FileNotFoundError' not in locals():
 def flatten(input_records, dns_servers, email_server,
             email_subject, fromaddress, toaddress,
             lastresult=None):
+    resolver = Resolver()
+    resolver.nameservers = dns_servers
     if lastresult is None:
         lastresult = dict()
     current = dict()
     for domain, spf_targets in input_records.items():
-        records = spf2ips(spf_targets, domain, dns_servers)
+        records = spf2ips(spf_targets, domain, resolver)
         hashsum = sequence_hash(records)
         current[domain] = {
             'sum': hashsum,
