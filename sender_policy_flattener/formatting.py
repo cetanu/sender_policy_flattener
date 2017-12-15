@@ -1,5 +1,7 @@
 # coding=utf-8
 import hashlib
+import sys
+from netaddr import IPSet
 
 
 def wrap_in_spf_tokens(domain, ipv4blocks, last_record):
@@ -45,3 +47,43 @@ def format_records_for_email(curr_addrs):
 
     bindformat = '<p><h1>BIND compatible format:</h1><pre>' + '\n'.join(bindformat) + '</pre></p>'
     return bindformat
+
+
+def sanitize(s):
+    s = str(s)
+    s = s.replace('"', '')
+    return s
+
+
+def ips_to_spf_strings(ips):
+    ips = [sanitize(s) for s in ips]
+    ips = [i for i in IPSet(ips).iter_cidrs()]
+    ips = [sanitize(s) for s in ips]
+    ips = ['ip6:' + ip if ':' in ip else
+           'ip4:' + ip.replace('/32', '')
+           for ip in ips]
+    return ips
+
+
+def spf_record_len(addresses):
+    quote_allowance = '" "' * (len(addresses) // 4)
+    return sys.getsizeof('v=spf1 {addresses} {quotes} include:spf1.example.domain.com -all'.format(
+        addresses=' ip4:'.join(addresses),
+        quotes=quote_allowance
+    ))
+
+
+def fit_bytes(ips, _bytes=450):
+    """ https://tools.ietf.org/html/rfc4408 """
+    blocks = [set(ips)]
+    for index, addresses in enumerate(blocks):
+        while spf_record_len(addresses) >= _bytes:
+            overflow = blocks[index].pop()
+            try:
+                blocks[index + 1]
+            except IndexError:
+                blocks.append(set())
+            finally:
+                blocks[index + 1].add(overflow)
+    last_index = len(blocks) - 1
+    return blocks, last_index

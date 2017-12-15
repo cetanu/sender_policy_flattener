@@ -2,7 +2,7 @@
 import unittest
 import mock
 from sender_policy_flattener import flatten
-from sender_policy_flattener.crawler import SPFCrawler
+from sender_policy_flattener.crawler import crawl
 from sender_policy_flattener.email_utils import email_changes
 from sender_policy_flattener.test.dns_mocks import dns_responses
 from sender_policy_flattener.test.ip_fixtures import test_com_netblocks
@@ -84,13 +84,9 @@ class MechanismTests(unittest.TestCase):
 
 
 class SenderPolicyFlattenerTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.crawler = SPFCrawler(['notused'])
-
     @mock.patch('sender_policy_flattener.crawler.resolver.Resolver.query', side_effect=MockDNSQuery)
     def test_crawler_returns_all_expected_ips(self, query):
-        actual = list(self.crawler._crawl('test.com', 'txt', 'sender.com'))
+        actual = list(crawl('test.com', 'txt', 'sender.com'))
         self.assertEqual(test_com_netblocks, actual)
 
     # @mock.patch('sender_policy_flattener.crawler.resolver.Resolver.query', side_effect=MockDNSQuery)
