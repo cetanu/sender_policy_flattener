@@ -9,7 +9,7 @@ When customers computers were querying our SPF records, there were more than 10 
 
 Solution? Query them ourselves, and create a much more condense list of SPF records.
 
-But wait... What if the upstream records change?
+But wait... What if the downstream records change?
 ------------------------------------------------
 
 Part of what the script does is that it creates a JSON file that keeps track of the last list of IP Addresses that your combination of SPF records had.
