@@ -6,7 +6,6 @@ from sender_policy_flattener.crawler import crawl, spf2ips, default_resolvers
 from sender_policy_flattener.email_utils import email_changes
 from sender_policy_flattener.test.dns_mocks import dns_responses
 from sender_policy_flattener.test.ip_fixtures import test_com_netblocks
-from sender_policy_flattener.test.email_fmts import expected_final_email
 from sender_policy_flattener.mechanisms import tokenize
 from sender_policy_flattener.handlers import *
 
