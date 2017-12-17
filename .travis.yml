@@ -10,8 +10,8 @@ python:
   - "3.6"
   - "3.6-dev"
   - "3.7"
- - "pypy"
- - "pypy3"
+  - "pypy"
+  - "pypy3"
 
 matrix:  
   allow_failures:
