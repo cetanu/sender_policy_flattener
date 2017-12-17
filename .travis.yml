@@ -3,23 +3,18 @@ cache: pip
 python:
   - "2.6"
   - "2.7"
-  - "3.2"
+ # - "3.2"   unicode issues
   - "3.3"
   - "3.4"
   - "3.5"
   - "3.6"
-  - "3.6-dev"
-  - "3.7"
-  - "pypy"
-  - "pypy3"
+  - "3.7-dev"
+ # - "pypy"   sys.getsizeof not implemented in pypy
+ # - "pypy3"  sys.getsizeof not implemented in pypy
 
 matrix:  
   allow_failures:
-    - python: "2.6"
-    - python: "3.2"
-    - python: "3.7"
-    - python: "pypy"
-    - python: "pypy3"
+    - python: "3.7-dev"
     
 install: pip install -r requirements.txt
 script: nosetests --nocapture --verbose
