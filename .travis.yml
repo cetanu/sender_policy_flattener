@@ -9,12 +9,14 @@ python:
   - "3.5"
   - "3.6"
   - "3.7-dev"
+  - "nightly"
  # - "pypy"   sys.getsizeof not implemented in pypy
  # - "pypy3"  sys.getsizeof not implemented in pypy
 
 matrix:  
   allow_failures:
     - python: "3.7-dev"
+    - python: "nightly"
     
 install: pip install -r requirements.txt
 script: nosetests --nocapture --verbose
