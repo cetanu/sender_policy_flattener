@@ -51,7 +51,7 @@ this package also supports RPM builds
 How do I use it?
 ----------------
 
-Python 2.7, or 3.3+ is required.
+Python 2.6, 2.7, or 3.3+ is required.
 
 Here's the usage:
 
