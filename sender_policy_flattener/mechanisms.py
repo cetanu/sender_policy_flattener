@@ -24,6 +24,7 @@ def tokenize(answer):
 
 def ip4(token):
     token = token.lstrip('ip4:')
+    token = token.strip('\"\' ')
     try:
         return str(IPAddress(token)), 'ip'
     except ValueError:
@@ -34,6 +35,7 @@ def ip4(token):
 
 def ip6(token):
     token = token.lstrip('ip6:')
+    token = token.strip('\"\' ')
     try:
         return str(IPAddress(token)), 'ip'
     except ValueError:
