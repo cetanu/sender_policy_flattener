@@ -1,21 +1,25 @@
 language: python
 cache: pip  
 python:
-  # - "2.6" # Fails on `unittest` module (some self.assert... methods unavailable for TestCase)
+  - "2.6"
   - "2.7"
-  # - "3.2" # Fails on dnspython, some kind of unicode issue
+  - "3.2"
   - "3.3"
   - "3.4"
   - "3.5"
   - "3.6"
   - "3.6-dev"
-#  - "3.7"  # not supported just yet
-# - "pypy"  # PyPy doesn't implement sys.getsizeof, which is what we use
-# - "pypy3" #   to determine the size of the SPF record
+  - "3.7"
+ - "pypy"
+ - "pypy3"
 
-#matrix:  
-#  allow_failures:
-#    python: "3.7"
+matrix:  
+  allow_failures:
+    - python: "2.6"
+    - python: "3.2"
+    - python: "3.7"
+    - python: "pypy"
+    - python: "pypy3"
     
 install: pip install -r requirements.txt
 script: nosetests --nocapture --verbose
