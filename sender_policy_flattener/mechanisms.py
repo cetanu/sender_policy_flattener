@@ -6,6 +6,9 @@ from netaddr.core import AddrFormatError
 def tokenize(answer):
     tokens = answer.split()
     for token in tokens:
+        # TXT records often contain quotes and will screw with the token.
+        token = token.strip('\"\' ')
+
         if any([token.startswith('a:'), token.startswith('a/'), token == 'a']):
             yield a(token)
         elif any([token.startswith('mx:'), token.startswith('mx/'), token == 'mx']):
