@@ -6,6 +6,9 @@ from netaddr.core import AddrFormatError
 def tokenize(answer):
     tokens = answer.split()
     for token in tokens:
+        # TXT records often contain quotes and will screw with the token.
+        token = token.strip('\"\' ')
+
         if any([token.startswith('a:'), token.startswith('a/'), token == 'a']):
             yield a(token)
         elif any([token.startswith('mx:'), token.startswith('mx/'), token == 'mx']):
@@ -24,7 +27,6 @@ def tokenize(answer):
 
 def ip4(token):
     token = token.lstrip('ip4:')
-    token = token.strip('\"\' ')
     try:
         return str(IPAddress(token)), 'ip'
     except ValueError:
@@ -35,7 +37,6 @@ def ip4(token):
 
 def ip6(token):
     token = token.lstrip('ip6:')
-    token = token.strip('\"\' ')
     try:
         return str(IPAddress(token)), 'ip'
     except ValueError:
