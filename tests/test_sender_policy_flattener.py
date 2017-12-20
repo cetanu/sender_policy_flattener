@@ -6,6 +6,7 @@ from sender_policy_flattener.crawler import crawl, spf2ips, default_resolvers
 from sender_policy_flattener.email_utils import email_changes
 from sender_policy_flattener.test.dns_mocks import dns_responses
 from sender_policy_flattener.test.ip_fixtures import test_com_netblocks
+from sender_policy_flattener.test.email_fmts import expected_final_email
 from sender_policy_flattener.mechanisms import tokenize
 from sender_policy_flattener.handlers import *
 
@@ -201,7 +202,7 @@ class SenderPolicyFlattenerTests(unittest.TestCase):
 
     @mock.patch(mocked_dns_object, side_effect=MockDNSQuery)
     @mock.patch('sender_policy_flattener.email_utils.smtplib', side_effect=MockSmtplib)
-    def test_bind_format_has_one_pair_of_parens_per_record(self, query, smtp):
+    def test_bind_format(self, query, smtp):
         expected_records = spf2ips({'test.com': 'txt'}, 'test.com')
         actual = email_changes(
             zone='test.com',
@@ -215,3 +216,4 @@ class SenderPolicyFlattenerTests(unittest.TestCase):
         )
         self.assertEqual(actual.count('('), actual.count('IN TXT'))
         self.assertEqual(actual.count(')'), actual.count('IN TXT'))
+        self.assertEqual(expected_final_email, actual)

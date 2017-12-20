@@ -75,15 +75,15 @@ def spf_record_len(addresses):
 
 def fit_bytes(ips, _bytes=450):
     """ https://tools.ietf.org/html/rfc4408 """
-    blocks = [set(ips)]
+    blocks = [sorted(set(ips))]
     for index, addresses in enumerate(blocks):
         while spf_record_len(addresses) >= _bytes:
             overflow = blocks[index].pop()
             try:
                 blocks[index + 1]
             except IndexError:
-                blocks.append(set())
+                blocks.append(list())
             finally:
-                blocks[index + 1].add(overflow)
+                blocks[index + 1].append(overflow)
     last_index = len(blocks) - 1
     return blocks, last_index
