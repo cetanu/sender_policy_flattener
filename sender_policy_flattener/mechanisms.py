@@ -1,6 +1,70 @@
 # coding=utf-8
+import re
 from netaddr import IPAddress, IPNetwork
 from netaddr.core import AddrFormatError
+
+
+def process_ip(token, keyword):
+    token = token.replace(keyword, '')
+    token = token.strip('\"\' ')
+    try:
+        return str(IPAddress(token)), 'ip'
+    except ValueError:
+        return str(IPNetwork(token)), 'ip'
+    except (AddrFormatError, Exception):
+        return None, None
+
+
+def process_short_alias(token, prefix):
+    try:
+        if ':' in token:
+            token = token.split(':')
+            if '/' in token[1]:
+                return token[1].split('/'), '{0}_domain_prefix'.format(prefix)
+            return token[1], '{0}_domain'.format(prefix)
+        elif '/' in token:
+            return token.split('/'), '{0}_prefix'.format(prefix)
+        elif token == prefix:
+            return token, prefix
+    except IndexError:
+        pass
+    return None, None
+
+
+def process_alias(token, keyword):
+    try:
+        return token.split(':')[-1], keyword
+    except IndexError:
+        return None, None
+
+
+def ip4(token):
+    return process_ip(token, 'ip4:')
+
+
+def ip6(token):
+    return process_ip(token, 'ip6:')
+
+
+def a(token):
+    return process_short_alias(token, 'a')
+
+
+def mx(token):
+    return process_short_alias(token, 'mx')
+
+
+def ptr(token):
+    token, _type = process_short_alias(token, 'ptr')
+    return token, _type[0:3]
+
+
+def include(token):
+    return process_alias(token, 'txt')
+
+
+def exists(token):
+    return process_alias(token, 'exists')
 
 
 def tokenize(answer):
@@ -8,100 +72,17 @@ def tokenize(answer):
     for token in tokens:
         # TXT records often contain quotes and will screw with the token.
         token = token.strip('\"\' ')
-
-        if any([token.startswith('a:'), token.startswith('a/'), token == 'a']):
-            yield a(token)
-        elif any([token.startswith('mx:'), token.startswith('mx/'), token == 'mx']):
-            yield mx(token)
-        elif any([token.startswith('ptr:'), token == 'ptr']):
-            yield ptr(token)
-        elif 'ip4:' in token:
-            yield ip4(token)
-        elif 'ip6:' in token:
-            yield ip6(token)
-        elif 'include:' in token:
-            yield include(token)
-        elif 'exists:' in token:
-            yield exists(token)
+        for pattern, fn in mechanism_mapping.items():
+            if re.match(pattern, token):
+                yield fn(token)
 
 
-def ip4(token):
-    token = token.replace('ip4:', '')
-    token = token.strip('\"\' ')
-    try:
-        return str(IPAddress(token)), 'ip'
-    except ValueError:
-        return str(IPNetwork(token)), 'ip'
-    except (AddrFormatError, Exception):
-        return None, None
-
-
-def ip6(token):
-    token = token.replace('ip6:', '')
-    token = token.strip('\"\' ')
-    try:
-        return str(IPAddress(token)), 'ip'
-    except ValueError:
-        return str(IPNetwork(token)), 'ip'
-    except (AddrFormatError, Exception):
-        return None, None
-
-
-def a(token):
-    if ':' in token:
-        token = token.split(':')
-        try:
-            if '/' in token[1]:
-                return token[1].split('/'), 'a_domain_prefix'
-            return token[1], 'a_domain'
-        except IndexError:
-            return None, None
-    elif '/' in token:
-        try:
-            return token.split('/'), 'a_prefix'
-        except IndexError:
-            return None, None
-    elif token == 'a':
-        return token, 'a'
-
-
-def mx(token):
-    if ':' in token:
-        token = token.split(':')
-        try:
-            if '/' in token[1]:
-                return token[1].split('/'), 'mx_domain_prefix'
-            return token[1], 'mx_domain'
-        except IndexError:
-            return None, None
-    elif '/' in token:
-        try:
-            return token.split('/'), 'mx_prefix'
-        except IndexError:
-            return None, None
-    elif token == 'mx':
-        return token, 'mx'
-
-
-def ptr(token):
-    if ':' in token:
-        try:
-            return token.split(':')[-1], 'ptr'
-        except IndexError:
-            return None, None
-    elif token == 'ptr':
-        return token, 'ptr'
-
-
-def include(token):
-    try:
-        return token.split(':')[-1], 'txt'
-    except IndexError:
-        return None, None
-
-
-def exists(token):
-    try:
-        return token.split(':')[-1], 'exists'
-    except IndexError:
-        return None, None
+mechanism_mapping = {
+    r'^a[:/]?': a,
+    r'^mx[:/]?': mx,
+    r'^ptr:?': ptr,
+    r'^ip4:': ip4,
+    r'^ip6:': ip6,
+    r'^include:': include,
+    r'^exists:': exists,
+}
