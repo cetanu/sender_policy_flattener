@@ -72,3 +72,18 @@ def handle_ptr(name, domain, ns):
 
 def handle_exists(name, domain, ns):
     yield 'exists:{0}'.format(name)
+
+
+handler_mapping = {
+    'ip': handle_ip,
+    'mx': handle_mx,
+    'mx_prefix': handle_mx_prefix,
+    'mx_domain': handle_mx_domain,
+    'mx_domain_prefix': handle_mx_domain_prefix,
+    'a': handle_a,
+    'a_domain': handle_a_domain,
+    'a_prefix': handle_a_prefix,
+    'a_domain_prefix': handle_a_domain_prefix,
+    'ptr': handle_ptr,
+    'exists': handle_exists,
+}
