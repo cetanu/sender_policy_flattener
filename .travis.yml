@@ -1,5 +1,6 @@
 language: python
-cache: pip  
+cache: pip
+dist: xenial
 python:
   - "2.6"
   - "2.7"
