@@ -2,18 +2,12 @@ language: python
 cache: pip
 dist: xenial
 python:
-  - "2.6"
   - "2.7"
- # - "3.2"   unicode issues
-  - "3.3"
   - "3.4"
   - "3.5"
   - "3.6"
   - "3.7"
-  - "3.8"
   - "nightly"
- # - "pypy"   sys.getsizeof not implemented in pypy
- # - "pypy3"  sys.getsizeof not implemented in pypy
 
 install: pip install -r requirements.txt
 script: nosetests --nocapture --verbose
