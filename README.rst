@@ -2,16 +2,15 @@
 
 sender_policy_flattener
 =======================
-
 We had a problem in our organisation that caused our SPF records to become invalid:
 
 When customers computers were querying our SPF records, there were more than 10 lookups required after following all of the ``include:`` remarks.
 
 Solution? Query them ourselves, and create a much more condense list of SPF records.
 
+
 But wait... What if the downstream records change?
 ------------------------------------------------
-
 Part of what the script does is that it creates a JSON file that keeps track of the last list of IP Addresses that your combination of SPF records had.
 
 When the hashsum of your IP Addresses changes, it will send out an email (or just dump HTML if it can't find an email server) with a handy diff & BIND format for viewing what has changed, and promptly updating it.
@@ -21,10 +20,10 @@ You could theoretically extract the flat IP records from the resulting JSON file
 How do I install it?
 --------------------
 
+
 via git clone
 ~~~~~~~~~~~~~
-
-Clone this repo and run 
+Clone this repo and run
 
 .. code:: shell
 
@@ -33,26 +32,24 @@ Clone this repo and run
 
 You can also do this from within a virtualenv if that tickles your fancy (I recommend it).
 
+
 via pip
 ~~~~~~~
-
 .. code:: shell
 
     pip install sender_policy_flattener
-    
+
+
 this package also supports RPM builds
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 .. code:: shell
 
     yum -y install rpm-build
     python setup.py bdist_rpm
 
+
 How do I use it?
 ----------------
-
-Python 2.6, 2.7, or 3.3+ is required.
-
 Here's the usage:
 
 .. code:: shell
@@ -110,15 +107,19 @@ You can specify a config file, or you can specify all of the optional arguments 
 I've provided a ``settings.json`` file with an example configuration file.
 
 
+Supported Python versions
+-------------------------
+See the latest result of the build: https://travis-ci.org/cetanu/sender_policy_flattener
+
+
 3rd party dependencies
 ----------------------
-
 * netaddr
 * dnspython
 
+
 Example email format
 --------------------
-
 |Example screenshot|
 
 
