@@ -1,5 +1,6 @@
 # coding=utf-8
 import re
+from functools import partial
 from netaddr import IPAddress, IPNetwork
 from netaddr.core import AddrFormatError
 
@@ -38,33 +39,17 @@ def process_alias(token, keyword):
         return None, None
 
 
-def ip4(token):
-    return process_ip(token, 'ip4:')
-
-
-def ip6(token):
-    return process_ip(token, 'ip6:')
-
-
-def a(token):
-    return process_short_alias(token, 'a')
-
-
-def mx(token):
-    return process_short_alias(token, 'mx')
-
-
 def ptr(token):
     token, _type = process_short_alias(token, 'ptr')
     return token, _type[0:3]
 
 
-def include(token):
-    return process_alias(token, 'txt')
-
-
-def exists(token):
-    return process_alias(token, 'exists')
+ip4 = partial(process_ip, keyword='ip4:')
+ip6 = partial(process_ip, keyword='ip6:')
+a = partial(process_short_alias, prefix='a')
+mx = partial(process_short_alias, prefix='mx')
+include = partial(process_alias, keyword='txt')
+exists = partial(process_alias, keyword='exists')
 
 
 def tokenize(answer):
