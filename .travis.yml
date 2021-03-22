@@ -11,3 +11,23 @@ python:
 
 install: pip install -r requirements.txt
 script: nosetests --nocapture --verbose
+
+deploy:
+  provider: pypi
+  skip_existing: true
+  skip_cleanup: true
+  on:
+    branch: master
+  user: "__token__"
+  password:
+    secure: "XscN1SpccH3NYpBjXD9VyCebkV7rm3fEhwXIoDcdgvg5AAxT7eEJ2EHh378erZwK
+             3Ec7XZ2/W6s1hHIn7qY0DvdHxlx7uRmZd5Ss8skAejYDdco6lMGo50DjDxJF2p6s
+             XKXMNNBrbQHa4jhUYDZf0VDdk5NMuC1LP2/aL0zmzZQ6OEqjmREBhkTR4Bg6YOp8
+             Fs/hA05LaW9xz3Nd4kowB4Y+9BhHbFEUUvr5jijFU5meod9VSSHUpvC3aiVhDr45
+             DY6MLCUl7Xomy5McUugOAOrczMyt+ifaWPBxN9Ao/uFpbm827BEOs6rWFivj9PQW
+             KatjXMDZEs/ptQgUjCh4kvlHwq9JBc/3ngYWz4S3ZuqU9ixVjjWKenVr/GOYZUxi
+             KN2hvH5LYFHBeUUmHEry4rvQnhl/42tgqiHvOcvlqWu/87NRbu95dZe3+q60Yk6X
+             1xoW/0G4QJWDsODd0QHDbo8FCrQYUnQ8vLTuSGq7p89tVtAODHloT2/7hviYWwlY
+             WOTJ0LuRAGvND6qMlHQvA5MEgnsiTUF9qMIXCXcFqpA9HK8rblR/7COX+Q4hHVZ9
+             KQU7P7J6QD3ghnd9ehu00ExMYtJFpishKr1fdEmC4Ds2Du/PkQPNGZO/HcFiOjbY
+             1WLD/3dcdhEp2kg35ZkcmPcSUv/G1x+/0FOGYRfdc9A="
