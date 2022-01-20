@@ -28,6 +28,8 @@ def crawl(rrname, rrtype, domain, ns=default_resolvers):
         answer = ' '.join([str(a) for a in answers])
         for pair in tokenize(answer):
             rname, rtype = pair
+            if rtype is None:
+                continue
             if rtype == 'txt':
                 for ip in crawl(rname, 'txt', domain, ns):
                     yield ip
