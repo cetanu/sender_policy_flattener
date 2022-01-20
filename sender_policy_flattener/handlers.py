@@ -9,9 +9,9 @@ def handle_ip(name, domain, ns):
 def handle_mx(name, domain, ns):
     answers = ns.query(domain, 'mx')
     for mailexchange in answers:
-        ips = ns.query(mailexchange, 'a')
+        ips = ns.query(mailexchange.exchange, 'a')
         for ip in ips:
-            yield IPAddress(ip)
+            yield IPAddress(ip.address)
 
 
 def handle_mx_domain(name, domain, ns):
@@ -19,7 +19,7 @@ def handle_mx_domain(name, domain, ns):
     for mailexchange in answers:
         ips = ns.query(mailexchange, 'a')
         for ip in ips:
-            yield IPAddress(ip)
+            yield IPAddress(ip.address)
 
 
 def handle_mx_prefix(name, domain, ns):
@@ -43,13 +43,13 @@ def handle_mx_domain_prefix(name, domain, ns):
 def handle_a(name, domain, ns):
     answers = ns.query(domain, 'a')
     for ip in answers:
-        yield IPAddress(ip)
+        yield IPAddress(ip.address)
 
 
 def handle_a_domain(name, domain, ns):
     answers = ns.query(name, 'a')
     for ip in answers:
-        yield IPAddress(ip)
+        yield IPAddress(ip.address)
 
 
 def handle_a_prefix(name, domain, ns):
