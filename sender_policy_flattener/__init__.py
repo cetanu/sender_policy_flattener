@@ -1,7 +1,7 @@
 # coding=utf-8
 import json
 from dns.resolver import Resolver
-from sender_policy_flattener.crawler import spf2ips, crawl
+from sender_policy_flattener.crawler import spf2ips
 from sender_policy_flattener.formatting import sequence_hash
 from sender_policy_flattener.email_utils import email_changes
 
