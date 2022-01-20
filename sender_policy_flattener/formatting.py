@@ -1,7 +1,7 @@
 # coding=utf-8
 import hashlib
 import sys
-from netaddr import IPSet, IPAddress, IPNetwork, AddrFormatError
+from netaddr import IPSet, IPNetwork, AddrFormatError
 
 
 def wrap_in_spf_tokens(domain, ipv4blocks, last_record):
