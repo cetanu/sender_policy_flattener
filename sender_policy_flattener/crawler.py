@@ -2,6 +2,7 @@
 
 from dns import resolver  # dnspython/3
 from dns.resolver import NXDOMAIN
+from dns.name import from_text
 from sender_policy_flattener.formatting import wrap_in_spf_tokens, ips_to_spf_strings, fit_bytes
 from sender_policy_flattener.mechanisms import tokenize
 from sender_policy_flattener.handlers import handler_mapping
@@ -21,7 +22,7 @@ def spf2ips(records, domain, resolvers=default_resolvers):
 
 def crawl(rrname, rrtype, domain, ns=default_resolvers):
     try:
-        answers = ns.query(rrname, rrtype)
+        answers = ns.query(from_text(rrname), rrtype)
     except Exception as err:
         print(repr(err), rrname, rrtype)
     else:
