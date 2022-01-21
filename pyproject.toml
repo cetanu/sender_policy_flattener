@@ -21,7 +21,7 @@ classifiers=[
     'Natural Language :: English',
 ]
 keywords=['spf', 'dns', 'sender policy framework']
-url='https://github.com/cetanu/sender_policy_flattener'
+repository='https://github.com/cetanu/sender_policy_flattener'
 
 [tool.poetry.scripts]
 spflat = 'sender_policy_flattener.cli:main'
