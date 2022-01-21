@@ -17,7 +17,9 @@ expected_large_hash = '103c78c52ee89aab2f55a32337d942191589c41613ab312279d050b63
 
 def MockDNSQuery(*args, **kwargs):
     rrecord, rrtype = args
-    return dns_responses[rrtype][rrecord]
+    _type = dns_responses[rrtype]
+    _record = _type[rrecord]
+    return _record
 
 
 def MockSmtplib(*args, **kwargs):

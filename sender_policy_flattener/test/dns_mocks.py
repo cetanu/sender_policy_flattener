@@ -1,4 +1,9 @@
 # coding=utf-8
+import dns.name
+import dns.rdata
+import dns.rdataclass
+import dns.rdatatype
+from functools import partial
 
 first_answer = ' '.join([
     '"v=spf1',
@@ -25,39 +30,48 @@ lots_of_blocks = ['ip4:{0}.{1}.{2}.{3}/{4}'.format(o1, o2, o3, o4, p)
                   for p in range(26, 31)]
 large_answer = '"v=spf1 {0} -all"'.format(' '.join(lots_of_blocks))
 
+def make_rdata(s, rdt):
+    return dns.rdata.from_text(dns.rdataclass.IN, rdt, s)
+
+a = partial(make_rdata, rdt=dns.rdatatype.A)
+txt = partial(make_rdata, rdt=dns.rdatatype.TXT)
+mx = partial(make_rdata, rdt=dns.rdatatype.MX)
+ptr = partial(make_rdata, rdt=dns.rdatatype.PTR)
+name = dns.name.from_text
+
 dns_responses = {
     'txt': {
-        'test.com': [first_answer],
-        'galactus.com': [large_answer],
-        'spf.fake.test': ['v=spf1 ip4:172.16.0.1 ip4:172.16.0.0/24 ip4:172.16.0.1/32'],
+        name('test.com'): [first_answer],
+        name('galactus.com'): [large_answer],
+        name('spf.fake.test'): ['v=spf1 ip4:172.16.0.1 ip4:172.16.0.0/24 ip4:172.16.0.1/32'],
     },
     'a': {
-        'test.fake': [
-            '10.0.0.10',
-            '10.0.0.11'
+        name('test.fake'): [
+            a('10.0.0.10'),
+            a('10.0.0.11')
         ],
-        'mx.test.fake': [
-            '10.0.0.12',
-            '10.0.0.13'
+        name('mx.test.fake'): [
+            a('10.0.0.12'),
+            a('10.0.0.13')
         ],
-        'test.com': [
-            '192.168.0.1'
+        name('test.com'): [
+            a('192.168.0.1')
         ],
-        'mx.test.com': [
-            '192.168.0.10'
+        name('mx.test.com'): [
+            a('192.168.0.10')
         ]
     },
     'mx': {
-        'test.fake': [
-            'mx.test.fake'
+        name('test.fake'): [
+            mx('10 mx.test.fake')
         ],
-        'test.com': [
-            'mx.test.com'
+        name('test.com'): [
+            mx('10 mx.test.com')
         ]
     },
     'ptr': {
-        '10.0.0.1.in-addr.arpa': [
-            'fwd.test.fake'
+        name('10.0.0.1.in-addr.arpa'): [
+            ptr('fwd.test.fake')
         ]
     },
 }
