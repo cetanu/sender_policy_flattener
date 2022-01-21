@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# coding=utf-8
 """
 A script that crawls and compacts SPF records into IP networks.
 This helps to avoid exceeding the DNS lookup limit of the Sender Policy Framework (SPF)
@@ -7,7 +5,7 @@ https://tools.ietf.org/html/rfc7208#section-4.6.4
 """
 import json
 import argparse
-from sender_policy_flattener import main
+import sender_policy_flattener
 
 
 # noinspection PyMissingOrEmptyDocstring
@@ -89,6 +87,10 @@ def parse_arguments():
     return arguments
 
 
-if __name__ == '__main__':
+def main():
     args = parse_arguments()
-    main(args)
+    sender_policy_flattener.main(args)
+
+
+if __name__ == "__main__":
+    main()

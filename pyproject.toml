@@ -1,0 +1,40 @@
+[tool.poetry]
+name = "sender_policy_flattener"
+version = "0.2.5"
+description='Condense SPF records to network blocks to avoid DNS Lookup Limits'
+authors = ["Vasili Syrakis <cetanu@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+classifiers=[
+    'Development Status :: 5 - Production/Stable',
+    'License :: OSI Approved :: MIT License',
+    'Programming Language :: Python :: Implementation :: CPython',
+    'Programming Language :: Python :: 2.7',
+    'Programming Language :: Python :: 3.3',
+    'Programming Language :: Python :: 3.4',
+    'Programming Language :: Python :: 3.5',
+    'Programming Language :: Python :: 3.6',
+    'Topic :: Internet :: Name Service (DNS)',
+    'Topic :: System :: Systems Administration',
+    'Topic :: Utilities',
+    'Intended Audience :: System Administrators',
+    'Natural Language :: English',
+]
+keywords='spf dns sender policy framework'
+url='https://github.com/cetanu/sender_policy_flattener'
+
+[tool.poetry.scripts]
+spflat = 'sender_policy_flattener.cli:main'
+
+[tool.poetry.dependencies]
+python = "^3.6"
+dnspython = "^2.2.0"
+netaddr = "^0.8.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "pytest-spec"
+pytest-spec = "^3.2.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
