@@ -1,5 +1,3 @@
-[<img src='https://api.travis-ci.org/cetanu/sender_policy_flattener.svg?branch=master'>](https://travis-ci.org/cetanu/sender_policy_flattener)
-
 sender policy flattener
 =======================
 We had a problem in our organisation that caused our SPF records to become invalid:
@@ -24,11 +22,9 @@ Installation
 Clone this repo and run
 
 ```shell
-pip install -r requirements.txt
-python setup.py install
+pip install poetry
+poetry install
 ```
-
-You can also do this from within a virtualenv if that tickles your fancy (I recommend it).
 
 
 #### via pip
@@ -37,13 +33,6 @@ You can also do this from within a virtualenv if that tickles your fancy (I reco
 pip install sender_policy_flattener
 ```
 
-
-#### this package also supports RPM builds
-
-```shell
-yum -y install rpm-build
-python setup.py bdist_rpm
-```
 
 Usage
 ----------------
@@ -103,7 +92,7 @@ I've provided a ``settings.json`` file with an example configuration file.
 
 Supported Python versions
 -------------------------
-See the latest result of the build: https://travis-ci.org/cetanu/sender_policy_flattener
+See the latest result of the build: https://github.com/cetanu/sender_policy_flattener/actions
 
 
 3rd party dependencies
