@@ -17,6 +17,12 @@ expected_large_hash = '103c78c52ee89aab2f55a32337d942191589c41613ab312279d050b63
 
 def MockDNSQuery(*args, **kwargs):
     rrecord, rrtype = args
+    rrecord = str(rrecord)
+    # normalize MX records '10 <domain>' to '<domain>'
+    rrecord = rrecord.split()[-1]  
+    # remove TLD dot from all domains
+    if rrecord.endswith('.'):
+        rrecord = rrecord.rstrip('.')
     _type = dns_responses[rrtype]
     _record = _type[rrecord]
     return _record

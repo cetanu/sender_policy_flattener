@@ -47,21 +47,21 @@ name = dns.name.from_text
 
 dns_responses = {
     "txt": {
-        name("test.com"): [first_answer],
-        name("galactus.com"): [large_answer],
-        name("spf.fake.test"): [
+        "test.com": [first_answer],
+        "galactus.com": [large_answer],
+        "spf.fake.test": [
             "v=spf1 ip4:172.16.0.1 ip4:172.16.0.0/24 ip4:172.16.0.1/32"
         ],
     },
     "a": {
-        name("test.fake"): [a("10.0.0.10"), a("10.0.0.11")],
-        name("mx.test.fake"): [a("10.0.0.12"), a("10.0.0.13")],
-        name("test.com"): [a("192.168.0.1")],
-        name("mx.test.com"): [a("192.168.0.10")],
+        "test.fake": [a("10.0.0.10"), a("10.0.0.11")],
+        "mx.test.fake": [a("10.0.0.12"), a("10.0.0.13")],
+        "test.com": [a("192.168.0.1")],
+        "mx.test.com": [a("192.168.0.10")],
     },
     "mx": {
-        name("test.fake"): [mx("10 mx.test.fake")],
-        name("test.com"): [mx("10 mx.test.com")],
+        "test.fake": [mx("10 mx.test.fake")],
+        "test.com": [mx("10 mx.test.com")],
     },
-    "ptr": {name("10.0.0.1.in-addr.arpa"): [ptr("fwd.test.fake")]},
+    "ptr": {"10.0.0.1.in-addr.arpa": [ptr("fwd.test.fake")]},
 }
