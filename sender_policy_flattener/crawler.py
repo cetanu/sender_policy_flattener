@@ -1,7 +1,7 @@
 # coding=utf-8
 
 from dns import resolver  # dnspython/3
-from dns.resolver import NXDOMAIN
+from dns.resolver import NXDOMAIN, NoAnswer
 from dns.name import from_text
 from sender_policy_flattener.formatting import (
     wrap_in_spf_tokens,
@@ -42,5 +42,5 @@ def crawl(rrname, rrtype, domain, ns=default_resolvers):
             try:
                 for ip in handler_mapping[rtype](rname, domain, ns):
                     yield ip
-            except NXDOMAIN as e:
+            except (NXDOMAIN, NoAnswer) as e:
                 print(e)
