@@ -49,6 +49,7 @@ def email_changes(
     html = MIMEText(html, "html")
     msg_template = MIMEMultipart("alternative")
     msg_template["Subject"] = subject.format(zone=zone)
+    msg_template["From"] = fromaddr
     email = msg_template
     email.attach(html)
 
