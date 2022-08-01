@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sender_policy_flattener"
-version = "0.3.1"
+version = "0.3.2"
 description='Condense SPF records to network blocks to avoid DNS Lookup Limits'
 authors = ["Vasili Syrakis <cetanu@gmail.com>"]
 license = "MIT"
