@@ -24,14 +24,15 @@ def flatten(
     fromaddress: EmailAddress,
     toaddress: EmailAddress,
     lastresult: dict[Domain, dict[str, str | list[str]]] | None = None,
-) -> dict[Domain, dict[str, str |list[str]]]:
+    static_ips: list[IPAddress] | None = None,
+) -> dict[Domain, dict[str, str | list[str]]]:
     resolver = Resolver()
     resolver.nameservers = dns_servers
     if lastresult is None:
         lastresult = dict()
     current: dict[Domain, dict[str, str | list[str]]] = dict()
     for domain, spf_targets in input_records.items():
-        records = spf2ips(spf_targets, domain, resolver)
+        records = spf2ips(spf_targets, domain, resolver, static_ips=static_ips)
         hashsum = sequence_hash(records)
         current[domain] = {"sum": hashsum, "records": records}
         if lastresult.get(domain, False) and current.get(domain, False):
@@ -54,7 +55,7 @@ def flatten(
 
 
 def main(args: Namespace) -> None:
-    previous_result: dict[Domain, dict[str, str | list[str]]]| None = None
+    previous_result: dict[Domain, dict[str, str | list[str]]] | None = None
     try:
         with open(args.output) as prev_hashes:
             previous_result = json.load(prev_hashes)
@@ -71,6 +72,7 @@ def main(args: Namespace) -> None:
             fromaddress=args.fromaddr,
             toaddress=args.toaddr,
             email_subject=args.subject,
+            static_ips=getattr(args, "static_ips", None),
         )
         with open(args.output, "w+") as f:
             json.dump(spf, f, indent=4, sort_keys=True)

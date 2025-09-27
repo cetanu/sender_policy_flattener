@@ -1,5 +1,5 @@
 # coding=utf-8
-from dns.resolver import NXDOMAIN, NoAnswer, Resolver
+from dns.resolver import Resolver
 import mock
 from sender_policy_flattener import flatten
 from sender_policy_flattener.crawler import crawl, spf2ips, default_resolvers
@@ -15,10 +15,7 @@ from sender_policy_flattener.handlers import (
     handle_a_domain,
     handle_a_prefix,
     handle_a_domain_prefix,
-    handler_mapping,
-    prefix_handler_mapping,
 )
-
 
 
 mocked_dns_object = "sender_policy_flattener.crawler.resolver.Resolver.query"
@@ -214,9 +211,6 @@ def test_crawler_returns_all_expected_ips(
     assert test_com_netblocks == actual
 
 
-
-
-
 @mock.patch(mocked_dns_object)
 @mock.patch("sender_policy_flattener.email_utils.smtplib", side_effect=MockSmtplib)
 def test_call_main_flatten_func(mock_smtp, mock_query, dns_responses):
@@ -281,3 +275,43 @@ def test_bind_format(mock_smtp, mock_query, dns_responses, expected_final_email)
     assert actual.count("(") == actual.count("IN TXT")
     assert actual.count(")") == actual.count("IN TXT")
     assert expected_final_email == actual
+
+
+@mock.patch(mocked_dns_object)
+def test_flatten_with_static_ips(mock_query, dns_responses):
+    mock_query.side_effect = lambda *a, **kw: MockDNSQuery(dns_responses, *a, **kw)
+    static_ips = ["1.1.1.1", "2.2.2.0/24", "10.0.0.50/32"]
+    actual = flatten(
+        input_records={"test.com": {"test.com": "txt"}},
+        dns_servers=["8.8.8.8"],
+        email_server="mocked",
+        email_subject="{zone} has changed",
+        fromaddress="mocked",
+        toaddress="mocked",
+        static_ips=static_ips,
+    )
+    resolvers = Resolver()
+    resolvers.nameservers = ["8.8.8.8"]
+    expected = {
+        "test.com": {
+            "records": [
+                "".join(
+                    (
+                        "v=spf1 exists:fake.test ip4:1.1.1.1 ip4:10.0.0.0/24 ",
+                        "ip4:172.16.0.0/24 ip4:192.168.0.1/26 ip4:2.2.2.0/24 ",
+                        "ip6:2001:4860:4000::/128 ip6:2404:6800:4000::/36 ",
+                        "ptr:10.0.0.1.in-addr.arpa -all",
+                    )
+                )
+            ],
+            "sum": "bf89b41176a3ecc5ab21b036270d680d9431130d83afe5305be42f566f7e4131",
+        }
+    }
+    assert expected == actual
+
+    # static ips and ranges are added
+    assert static_ips[0] in actual["test.com"]["records"][0]
+    assert static_ips[1] in actual["test.com"]["records"][0]
+
+    # ip is compacted into 10.0.0.0/24
+    assert static_ips[2] not in actual["test.com"]["records"][0]

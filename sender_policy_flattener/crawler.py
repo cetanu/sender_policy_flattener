@@ -13,7 +13,7 @@ from sender_policy_flattener.formatting import (
 )
 from sender_policy_flattener.mechanisms import tokenize
 from sender_policy_flattener.handlers import (
-    handler_mapping, 
+    handler_mapping,
     prefix_handler_mapping,
 )
 
@@ -64,11 +64,13 @@ def spf2ips(
     records: dict[Record, RRType],
     domain: Domain,
     resolvers: Resolver = default_resolvers,
-    crawler: Callable[[
-        Record, RRType, Domain, Resolver
-    ], Iterator[Netblock]] = crawl,
+    crawler: Callable[[Record, RRType, Domain, Resolver], Iterator[Netblock]] = crawl,
+    static_ips: list[str] | None = None,
 ) -> list[str]:
     ips: set[Netblock] = set()
+    if static_ips:
+        for ip in static_ips:
+            ips.add(ip)
     for rrecord, rdtype in records.items():
         for ip in crawler(rrecord, rdtype, domain, resolvers):
             ips.add(ip)

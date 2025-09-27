@@ -3,6 +3,7 @@ A script that crawls and compacts SPF records into IP networks.
 This helps to avoid exceeding the DNS lookup limit of the Sender Policy Framework (SPF)
 https://tools.ietf.org/html/rfc7208#section-4.6.4
 """
+
 import json
 import argparse
 from typing import Any
@@ -97,13 +98,25 @@ def parse_arguments() -> argparse.Namespace:
         required=False,
     )
 
+    _ = parser.add_argument(
+        "--static-ips",
+        dest="static_ips",
+        help="Comma separated IPs to be added to the SPF record",
+        default=None,
+        required=False,
+    )
+
     arguments = parser.parse_args()
     if arguments.sending_domain:
-        spf_includes: list[list[str]] = [x.split(":") for x in str(arguments.domains).split(",")]
+        spf_includes: list[list[str]] = [
+            x.split(":") for x in str(arguments.domains).split(",")
+        ]
         domains: dict[Domain, dict[Domain, RRType]] = {
             arguments.sending_domain: {d[0]: d[1] for d in spf_includes}
         }
         arguments.domains = domains
+    if arguments.static_ips:
+        arguments.static_ips = arguments.static_ips.split(",")
     if arguments.config:
         with open(arguments.config) as config:
             settings: dict[str, Any] = json.load(config)
@@ -114,6 +127,7 @@ def parse_arguments() -> argparse.Namespace:
             arguments.mailserver = settings["email"]["server"]
             arguments.domains = settings["sending domains"]
             arguments.output = settings["output"]
+            arguments.static_ips = settings.get("static_ips")
     required_non_config_args = all(
         [
             arguments.toaddr,
