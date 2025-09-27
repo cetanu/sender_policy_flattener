@@ -14,16 +14,6 @@ from sender_policy_flattener.handlers import handler_mapping
 default_resolvers = resolver.Resolver()
 
 
-def spf2ips(records, domain, resolvers=default_resolvers):
-    ips = set()
-    for rrecord, rdtype in records.items():
-        for ip in crawl(rrecord, rdtype, domain, resolvers):
-            ips.add(ip)
-    ips = ips_to_spf_strings(ips)
-    ipv4blocks, last_record = fit_bytes(ips)
-    return [record for record in wrap_in_spf_tokens(domain, ipv4blocks, last_record)]
-
-
 def crawl(rrname, rrtype, domain, ns=default_resolvers):
     try:
         answers = ns.query(from_text(rrname), rrtype)
@@ -44,3 +34,12 @@ def crawl(rrname, rrtype, domain, ns=default_resolvers):
                     yield ip
             except (NXDOMAIN, NoAnswer) as e:
                 print(e)
+
+def spf2ips(records, domain, resolvers=default_resolvers, crawler=crawl):
+    ips = set()
+    for rrecord, rdtype in records.items():
+        for ip in crawler(rrecord, rdtype, domain, resolvers):
+            ips.add(ip)
+    ips = ips_to_spf_strings(ips)
+    ipv4blocks, last_record = fit_bytes(ips)
+    return [record for record in wrap_in_spf_tokens(domain, ipv4blocks, last_record)]
