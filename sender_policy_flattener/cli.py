@@ -5,13 +5,18 @@ https://tools.ietf.org/html/rfc7208#section-4.6.4
 """
 import json
 import argparse
+from typing import Any
+
 import sender_policy_flattener
 
+# Type Aliases
+Domain = str
+RRType = str
 
-# noinspection PyMissingOrEmptyDocstring
-def parse_arguments():
+
+def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
+    _ = parser.add_argument(
         "-c",
         "--config",
         dest="config",
@@ -20,7 +25,7 @@ def parse_arguments():
         required=False,
     )
 
-    parser.add_argument(
+    _ = parser.add_argument(
         "-r",
         "--resolvers",
         dest="resolvers",
@@ -29,7 +34,7 @@ def parse_arguments():
         required=False,
     )
 
-    parser.add_argument(
+    _ = parser.add_argument(
         "-e",
         "-mailserver",
         dest="mailserver",
@@ -38,7 +43,7 @@ def parse_arguments():
         required=False,
     )
 
-    parser.add_argument(
+    _ = parser.add_argument(
         "-t",
         "-to",
         dest="toaddr",
@@ -47,7 +52,7 @@ def parse_arguments():
         required=False,
     )
 
-    parser.add_argument(
+    _ = parser.add_argument(
         "-f",
         "-from",
         dest="fromaddr",
@@ -56,7 +61,7 @@ def parse_arguments():
         required=False,
     )
 
-    parser.add_argument(
+    _ = parser.add_argument(
         "-s",
         "-subject",
         dest="subject",
@@ -65,7 +70,7 @@ def parse_arguments():
         required=False,
     )
 
-    parser.add_argument(
+    _ = parser.add_argument(
         "-D",
         "--sending-domain",
         dest="sending_domain",
@@ -74,7 +79,7 @@ def parse_arguments():
         required=False,
     )
 
-    parser.add_argument(
+    _ = parser.add_argument(
         "-d",
         "--domains",
         dest="domains",
@@ -83,7 +88,7 @@ def parse_arguments():
         required=False,
     )
 
-    parser.add_argument(
+    _ = parser.add_argument(
         "-o",
         "--output",
         dest="output",
@@ -94,13 +99,14 @@ def parse_arguments():
 
     arguments = parser.parse_args()
     if arguments.sending_domain:
-        spf_includes = [x.split(":") for x in str(arguments.domains).split(",")]
-        arguments.domains = {
+        spf_includes: list[list[str]] = [x.split(":") for x in str(arguments.domains).split(",")]
+        domains: dict[Domain, dict[Domain, RRType]] = {
             arguments.sending_domain: {d[0]: d[1] for d in spf_includes}
         }
+        arguments.domains = domains
     if arguments.config:
         with open(arguments.config) as config:
-            settings = json.load(config)
+            settings: dict[str, Any] = json.load(config)
             arguments.resolvers = settings["resolvers"]
             arguments.toaddr = settings["email"]["to"]
             arguments.fromaddr = settings["email"]["from"]
@@ -125,7 +131,7 @@ def parse_arguments():
     return arguments
 
 
-def main():
+def main() -> None:
     args = parse_arguments()
     sender_policy_flattener.main(args)
 

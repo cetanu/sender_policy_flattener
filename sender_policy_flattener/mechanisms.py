@@ -1,11 +1,25 @@
 # coding=utf-8
 import re
+from typing import Callable
 from functools import partial
+from collections.abc import Iterator
+
 from netaddr import IPAddress, IPNetwork
 from netaddr.core import AddrFormatError
 
+# Type Aliases
+Token = str
+Keyword = str
+Prefix = str
+MechanismName = str | None
+Domain = str
+Netblock = str
+ProcessedQuery = list[str] | Domain | Netblock | None
+MechanismResult = tuple[ProcessedQuery, MechanismName]
+Mechanism = Callable[[Token], MechanismResult]
 
-def process_ip(token, keyword):
+
+def process_ip(token: Token, keyword: Keyword) -> tuple[Netblock | None, MechanismName]:
     token = token.replace(keyword, "")
     token = token.strip("\"' ")
     try:
@@ -16,15 +30,17 @@ def process_ip(token, keyword):
         return None, None
 
 
-def process_short_alias(token, prefix):
+def process_short_alias(
+    token: Token, prefix: Prefix
+) -> tuple[list[str] | Domain | None, MechanismName]:
     try:
         if ":" in token:
-            token = token.split(":")
-            if "/" in token[1]:
-                return token[1].split("/"), "{0}_domain_prefix".format(prefix)
-            return token[1], "{0}_domain".format(prefix)
+            parts = token.split(":")
+            if "/" in parts[1]:
+                return parts[1].split("/"), f"{prefix}_domain_prefix"
+            return parts[1], f"{prefix}_domain"
         elif "/" in token:
-            return token.split("/"), "{0}_prefix".format(prefix)
+            return token.split("/"), f"{prefix}_prefix"
         elif token == prefix:
             return token, prefix
     except IndexError:
@@ -32,16 +48,20 @@ def process_short_alias(token, prefix):
     return None, None
 
 
-def process_alias(token, keyword):
+def process_alias(
+    token: Token, keyword: Keyword
+) -> tuple[Domain | None, MechanismName]:
     try:
         return token.split(":")[-1], keyword
     except IndexError:
         return None, None
 
 
-def ptr(token):
-    token, _type = process_short_alias(token, "ptr")
-    return token, _type[0:3]
+def ptr(token: Token) -> tuple[list[str] | Domain | None, MechanismName]:
+    token_part, _type = process_short_alias(token, "ptr")
+    if _type:
+        return token_part, _type[0:3]
+    return token_part, _type
 
 
 ip4 = partial(process_ip, keyword="ip4:")
@@ -52,7 +72,9 @@ include = partial(process_alias, keyword="txt")
 exists = partial(process_alias, keyword="exists")
 
 
-def tokenize(answer):
+def tokenize(
+    answer: str,
+) -> Iterator[tuple[str | list[str] | Domain | Netblock | None, MechanismName]]:
     tokens = answer.split()
     for token in tokens:
         # TXT records often contain quotes and will screw with the token.
@@ -62,7 +84,7 @@ def tokenize(answer):
                 yield fn(token)
 
 
-mechanism_mapping = {
+mechanism_mapping: dict[str, Mechanism] = {
     r"^a[:/]?": a,
     r"^mx[:/]?": mx,
     r"^ptr:?": ptr,

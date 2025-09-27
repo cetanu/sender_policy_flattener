@@ -1,5 +1,5 @@
 # coding=utf-8
-from dns.resolver import NXDOMAIN, NoAnswer
+from dns.resolver import NXDOMAIN, NoAnswer, Resolver
 import mock
 from sender_policy_flattener import flatten
 from sender_policy_flattener.crawler import crawl, spf2ips, default_resolvers
@@ -15,7 +15,8 @@ from sender_policy_flattener.handlers import (
     handle_a_domain,
     handle_a_prefix,
     handle_a_domain_prefix,
-    handler_mapping
+    handler_mapping,
+    prefix_handler_mapping,
 )
 
 
@@ -213,26 +214,7 @@ def test_crawler_returns_all_expected_ips(
     assert test_com_netblocks == actual
 
 
-def mock_crawler(dns_responses, rrname, rrtype, domain, ns=default_resolvers):
-    try:
-        answers = MockDNSQuery(dns_responses, rrname, rrtype)
-    except Exception as err:
-        print(repr(err), rrname, rrtype)
-    else:
-        answer = " ".join([str(a) for a in answers])
-        for pair in tokenize(answer):
-            rname, rtype = pair
-            if rtype is None:
-                continue
-            if rtype == "txt":
-                for ip in mock_crawler(dns_responses, rname, "txt", domain, ns):
-                    yield ip
-                continue
-            try:
-                for ip in handler_mapping[rtype](rname, domain, ns):
-                    yield ip
-            except (NXDOMAIN, NoAnswer) as e:
-                print(e)
+
 
 
 @mock.patch(mocked_dns_object)
@@ -248,10 +230,9 @@ def test_call_main_flatten_func(mock_smtp, mock_query, dns_responses):
         toaddress="mocked",
     )
 
-    def crawler(rrname, rrtype, domain, resolvers):
-        return mock_crawler(dns_responses, rrname, rrtype, domain, resolvers)
-
-    expected_records = spf2ips({"test.com": "txt"}, "test.com", crawler=crawler)
+    resolvers = Resolver()
+    resolvers.nameservers = ["8.8.8.8"]
+    expected_records = spf2ips({"test.com": "txt"}, "test.com", resolvers=resolvers)
     expected = {"test.com": {"records": expected_records, "sum": expected_hash}}
     assert expected == actual
 
@@ -271,10 +252,9 @@ def test_call_main_flatten_func_on_large_spf_records(
         toaddress="mocked",
     )
 
-    def crawler(rrname, rrtype, domain, resolvers):
-        return mock_crawler(dns_responses, rrname, rrtype, domain, resolvers)
-
-    expected_records = spf2ips({"galactus.com": "txt"}, "test.com", crawler=crawler)
+    resolvers = Resolver()
+    resolvers.nameservers = ["8.8.8.8"]
+    expected_records = spf2ips({"galactus.com": "txt"}, "test.com", resolvers=resolvers)
     expected = {"test.com": {"records": expected_records, "sum": expected_large_hash}}
     assert expected == actual
 
@@ -284,10 +264,9 @@ def test_call_main_flatten_func_on_large_spf_records(
 def test_bind_format(mock_smtp, mock_query, dns_responses, expected_final_email):
     mock_query.side_effect = lambda *a, **kw: MockDNSQuery(dns_responses, *a, **kw)
 
-    def crawler(rrname, rrtype, domain, resolvers):
-        return mock_crawler(dns_responses, rrname, rrtype, domain, resolvers)
-
-    expected_records = spf2ips({"test.com": "txt"}, "test.com", crawler=crawler)
+    resolvers = Resolver()
+    resolvers.nameservers = ["8.8.8.8"]
+    expected_records = spf2ips({"test.com": "txt"}, "test.com", resolvers=resolvers)
     actual = email_changes(
         zone="test.com",
         prev_addrs=[],

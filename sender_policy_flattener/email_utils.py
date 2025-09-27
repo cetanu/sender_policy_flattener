@@ -7,6 +7,10 @@ from email.mime.multipart import MIMEMultipart
 
 from sender_policy_flattener.formatting import format_records_for_email
 
+# Type Aliases
+Domain = str
+EmailAddress = str
+SPFRecord = str
 
 _email_style = """
     <style type="text/css">
@@ -31,13 +35,20 @@ _email_style = """
 
 
 def email_changes(
-    zone, prev_addrs, curr_addrs, subject, server, fromaddr, toaddr, test=False
-):
+    zone: Domain,
+    prev_addrs: list[SPFRecord],
+    curr_addrs: list[SPFRecord],
+    subject: str,
+    server: str,
+    fromaddr: EmailAddress,
+    toaddr: EmailAddress,
+    test: bool = False,
+) -> str | None:
     bindformat = format_records_for_email(curr_addrs)
-    prev_addrs = " ".join(prev_addrs)
-    curr_addrs = " ".join(curr_addrs)
-    prev = sorted([s for s in prev_addrs.split() if "ip" in s])
-    curr = sorted([s for s in curr_addrs.split() if "ip" in s])
+    prev_addrs_str = " ".join(prev_addrs)
+    curr_addrs_str = " ".join(curr_addrs)
+    prev = sorted([s for s in prev_addrs_str.split() if "ip" in s])
+    curr = sorted([s for s in curr_addrs_str.split() if "ip" in s])
 
     diff = HtmlDiff()
     table = diff.make_table(
@@ -46,12 +57,12 @@ def email_changes(
 
     header = "<h1>Diff</h1>"
     html = _email_style + bindformat + header + table
-    html = MIMEText(html, "html")
+    html_part = MIMEText(html, "html")
     msg_template = MIMEMultipart("alternative")
     msg_template["Subject"] = subject.format(zone=zone)
     msg_template["From"] = fromaddr
     email = msg_template
-    email.attach(html)
+    email.attach(html_part)
 
     try:
         mailserver = smtplib.SMTP()
@@ -60,6 +71,7 @@ def email_changes(
     except Exception as err:
         print("Email failed: " + str(err))
         with open("result.html", "w+") as mailfile:
-            mailfile.write(html.as_string())
+            mailfile.write(html_part.as_string())
     if test:
         return bindformat
+    return None

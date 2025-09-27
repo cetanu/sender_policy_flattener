@@ -1,29 +1,39 @@
 # coding=utf-8
 import hashlib
 import sys
+from collections.abc import Iterator, Iterable
+
 from netaddr import IPSet, IPNetwork, AddrFormatError
 
+# Type Aliases
+Domain = str
+SPFRecord = str
+BindRecord = str
+EmailBody = str
+IPAddress = str
+Netblock = str
 
-def wrap_in_spf_tokens(domain, ipv4blocks, last_record):
+
+def wrap_in_spf_tokens(
+    domain: Domain, ipv4blocks: list[list[Netblock]], last_record: int
+) -> Iterator[SPFRecord]:
     for spf_num, spf_set in enumerate(ipv4blocks):
-        spf_set = " ".join(spf_set)
+        spf_set_str = " ".join(spf_set)
         if spf_num == last_record:
-            spfrecord = "v=spf1 {0} -all".format(spf_set)
+            spfrecord = f"v=spf1 {spf_set_str} -all"
         else:
-            spfrecord = "v=spf1 {0} include:spf{1}.{2} -all".format(
-                spf_set, spf_num + 1, domain
-            )
+            spfrecord = f"v=spf1 {spf_set_str} include:spf{spf_num + 1}.{domain} -all"
         yield spfrecord
 
 
-def format_rrecord_value_for_bind(spfrec):
-    spfrec = spfrec.split()
+def format_rrecord_value_for_bind(spfrec: SPFRecord) -> Iterator[BindRecord]:
+    spfrec_list = spfrec.split()
     yield "( "
-    while spfrec:
+    while spfrec_list:
         line, end = '"', '"'
         try:
-            for i in range(4):
-                line += spfrec.pop(0) + " "
+            for _ in range(4):
+                line += spfrec_list.pop(0) + " "
         except IndexError:
             end = '"'
         finally:
@@ -31,67 +41,63 @@ def format_rrecord_value_for_bind(spfrec):
     yield " )"
 
 
-def sequence_hash(iterable):
+def sequence_hash(iterable: Iterable[str]) -> str:
     flat_sorted_sequence = " ".join(
         sorted([token for string in iterable for token in string.split()])
     )
     return hashlib.sha256(flat_sorted_sequence.encode()).hexdigest()
 
 
-def format_records_for_email(curr_addrs):
-    bindformat = list()
+def format_records_for_email(curr_addrs: list[SPFRecord]) -> EmailBody:
+    bindformat: list[BindRecord] = []
     for record in curr_addrs:
-        bindformat += format_rrecord_value_for_bind(record)
+        bindformat.extend(format_rrecord_value_for_bind(record))
 
     count = 0
     for index, chunk in enumerate(bindformat):
         if "(" in chunk:
-            bindformat[index] = (
-                "@ IN TXT (" if count == 0 else "spf{0} IN TXT (".format(count)
-            )
+            bindformat[index] = "@ IN TXT (" if count == 0 else f"spf{count} IN TXT ("
             count += 1
 
-    bindformat = (
+    return (
         "<p><h1>BIND compatible format:</h1><pre>"
         + "\n".join(bindformat)
         + "</pre></p>"
     )
-    return bindformat
 
 
-def ips_to_spf_strings(ips):
-    other_tokens = list()
-    for index, ip in enumerate(ips):
+def ips_to_spf_strings(ips: set[IPAddress | Netblock]) -> list[str]:
+    other_tokens: list[str] = []
+    for ip in list(ips):
         try:
-            IPNetwork(ip)
+            _ = IPNetwork(ip)
         except AddrFormatError:
             other_tokens.append(ip)
-    for token in other_tokens:
-        ips.remove(token)
-    ips = [str(i) for i in IPSet(ips).iter_cidrs()]
-    ips = ["ip6:" + ip if ":" in ip else "ip4:" + ip.replace("/32", "") for ip in ips]
-    return ips + other_tokens
+            ips.remove(ip)
+    ip_list = [str(i) for i in IPSet(ips).iter_cidrs()]
+    ip_list = [
+        "ip6:" + ip if ":" in ip else "ip4:" + ip.replace("/32", "") for ip in ip_list
+    ]
+    return ip_list + other_tokens
 
 
-def spf_record_len(addresses):
+def spf_record_len(addresses: list[Netblock]) -> int:
     quote_allowance = '" "' * (len(addresses) // 4)
     return sys.getsizeof(
-        "v=spf1 {addresses} {quotes} include:spf1.example.domain.com -all".format(
-            addresses=" ip4:".join(addresses), quotes=quote_allowance
-        )
+        f"v=spf1 {' ip4:'.join(addresses)} {quote_allowance} include:spf1.example.domain.com -all"
     )
 
 
-def fit_bytes(ips, _bytes=450):
+def fit_bytes(ips: list[str], _bytes: int = 450) -> tuple[list[list[str]], int]:
     """https://tools.ietf.org/html/rfc4408"""
-    blocks = [sorted(set(ips))]
+    blocks: list[list[str]] = [sorted(set(ips))]
     for index, addresses in enumerate(blocks):
         while spf_record_len(addresses) >= _bytes:
             overflow = blocks[index].pop()
             try:
                 blocks[index + 1]
             except IndexError:
-                blocks.append(list())
+                blocks.append([])
             finally:
                 blocks[index + 1].append(overflow)
     last_index = len(blocks) - 1

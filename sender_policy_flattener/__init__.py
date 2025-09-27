@@ -1,28 +1,35 @@
 # coding=utf-8
 import json
+from argparse import Namespace
+
 from dns.resolver import Resolver
+
 from sender_policy_flattener.crawler import spf2ips
 from sender_policy_flattener.formatting import sequence_hash
 from sender_policy_flattener.email_utils import email_changes
+
+Domain = str
+EmailAddress = str
+IPAddress = str
 
 if "FileNotFoundError" not in locals():
     FileNotFoundError = IOError
 
 
 def flatten(
-    input_records,
-    dns_servers,
-    email_server,
-    email_subject,
-    fromaddress,
-    toaddress,
-    lastresult=None,
-):
+    input_records: dict[Domain, dict[Domain, str]],
+    dns_servers: list[IPAddress],
+    email_server: str,
+    email_subject: str,
+    fromaddress: EmailAddress,
+    toaddress: EmailAddress,
+    lastresult: dict[Domain, dict[str, str | list[str]]] | None = None,
+) -> dict[Domain, dict[str, str |list[str]]]:
     resolver = Resolver()
     resolver.nameservers = dns_servers
     if lastresult is None:
         lastresult = dict()
-    current = dict()
+    current: dict[Domain, dict[str, str | list[str]]] = dict()
     for domain, spf_targets in input_records.items():
         records = spf2ips(spf_targets, domain, resolver)
         hashsum = sequence_hash(records)
@@ -31,20 +38,23 @@ def flatten(
             previous_sum = lastresult[domain]["sum"]
             current_sum = current[domain]["sum"]
             if previous_sum != current_sum:
-                email_changes(
-                    zone=domain,
-                    prev_addrs=lastresult[domain]["records"],
-                    curr_addrs=current[domain]["records"],
-                    subject=email_subject,
-                    server=email_server,
-                    fromaddr=fromaddress,
-                    toaddr=toaddress,
-                )
+                prev_addrs = lastresult[domain]["records"]
+                curr_addrs = current[domain]["records"]
+                if isinstance(prev_addrs, list) and isinstance(curr_addrs, list):
+                    _bind_format = email_changes(
+                        zone=domain,
+                        prev_addrs=prev_addrs,
+                        curr_addrs=curr_addrs,
+                        subject=email_subject,
+                        server=email_server,
+                        fromaddr=fromaddress,
+                        toaddr=toaddress,
+                    )
     return current
 
 
-def main(args):
-    previous_result = None
+def main(args: Namespace) -> None:
+    previous_result: dict[Domain, dict[str, str | list[str]]]| None = None
     try:
         with open(args.output) as prev_hashes:
             previous_result = json.load(prev_hashes)
