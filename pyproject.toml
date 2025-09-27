@@ -1,42 +1,50 @@
-[tool.poetry]
+[project]
 name = "sender_policy_flattener"
 version = "0.3.2"
-description='Condense SPF records to network blocks to avoid DNS Lookup Limits'
-authors = ["Vasili Syrakis <cetanu@gmail.com>"]
-license = "MIT"
+description = "Condense SPF records to network blocks to avoid DNS Lookup Limits"
+authors = [{ name = "Vasili Syrakis", email = "cetanu@gmail.com" }]
+requires-python = ">=3.6.2,<4"
 readme = "README.md"
-classifiers=[
-    'Development Status :: 5 - Production/Stable',
-    'License :: OSI Approved :: MIT License',
-    'Programming Language :: Python :: Implementation :: CPython',
-    'Programming Language :: Python :: 2.7',
-    'Programming Language :: Python :: 3.3',
-    'Programming Language :: Python :: 3.4',
-    'Programming Language :: Python :: 3.5',
-    'Programming Language :: Python :: 3.6',
-    'Topic :: Internet :: Name Service (DNS)',
-    'Topic :: System :: Systems Administration',
-    'Topic :: Utilities',
-    'Intended Audience :: System Administrators',
-    'Natural Language :: English',
+license = "MIT"
+keywords = [
+    "spf",
+    "dns",
+    "sender policy framework",
 ]
-keywords=['spf', 'dns', 'sender policy framework']
-repository='https://github.com/cetanu/sender_policy_flattener'
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: 2.7",
+    "Programming Language :: Python :: 3.3",
+    "Programming Language :: Python :: 3.4",
+    "Programming Language :: Python :: 3.5",
+    "Programming Language :: Python :: 3.6",
+    "Topic :: Internet :: Name Service (DNS)",
+    "Topic :: System :: Systems Administration",
+    "Topic :: Utilities",
+    "Intended Audience :: System Administrators",
+    "Natural Language :: English",
+]
+dependencies = [
+    "dnspython",
+    "netaddr",
+]
 
-[tool.poetry.scripts]
-spflat = 'sender_policy_flattener.cli:main'
+[project.urls]
+Repository = "https://github.com/cetanu/sender_policy_flattener"
 
-[tool.poetry.dependencies]
-python = "^3.6.2"
-dnspython = "^2.2.0"
-netaddr = "^0.8.0"
+[project.scripts]
+spflat = "sender_policy_flattener.cli:main"
 
-[tool.poetry.dev-dependencies]
-pytest = "pytest-spec"
-pytest-spec = "^3.2.0"
-mock = "^4.0.3"
-black = "^21.12b0"
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-spec",
+    "mock",
+    "ruff",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
