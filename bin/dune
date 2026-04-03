@@ -1,0 +1,5 @@
+(executable
+ (public_name spfcompress)
+ (name main)
+ (libraries spfcompress yojson ppx_yojson_conv_lib)
+ (preprocess (pps ppx_yojson_conv)))

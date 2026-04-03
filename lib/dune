@@ -1,0 +1,9 @@
+(library
+ (name spfcompress)
+ (libraries 
+   cmdliner
+   yojson
+   ppx_yojson_conv_lib
+ )
+ (preprocess (pps ppx_yojson_conv))
+)

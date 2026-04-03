@@ -1,0 +1,18 @@
+{
+    "sending_domains": {
+        "first.local": {
+            "yahoo.com": "a",
+            "google.com": "txt",
+            "apple.com": "txt",
+            "reddit.com": "txt"
+        },
+        "second.local": {
+            "cisco.com": "a",
+            "oculus.com": "a"
+        }
+    },
+    "resolvers": [
+        "8.8.8.8",
+        "8.8.4.4"
+    ]
+}
