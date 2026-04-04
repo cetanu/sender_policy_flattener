@@ -1,3 +1,4 @@
 (test
  (name test_spfcompress)
- (libraries spfcompress))
+ (libraries spfcompress)
+ (deps ../example_config.json))
