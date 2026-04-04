@@ -1,44 +1,41 @@
-open Yojson.Safe
+open Yojson.Safe.Util
 
-type dns_rrtype = 
-  | A 
-  | AAAA 
-  | CNAME 
-  | MX 
+type rrtype =
+  | A
+  | AAAA
+  | CNAME
+  | MX
   | TXT
 
-(** Custom decoder to handle case insensitivity *)
-let dns_rrtype_of_yojson json =
-  match json with
-  | `String s ->
-      (match String.lowercase_ascii s with
-       | "a"     -> Ok A
-       | "aaaa"  -> Ok AAAA
-       | "cname" -> Ok CNAME
-       | "mx"    -> Ok MX
-       | "txt"   -> Ok TXT
-       | _       -> Error ("Unknown RR type: " ^ s))
-  | _ -> Error "Expected a JSON string for RR type"
+let rrtype_to_string = function
+  | "a" -> A
+  | "aaaa" -> AAAA 
+  | "cname" -> CNAME
+  | "mx" -> MX 
+  | "txt" -> TXT
+  | s -> failwith ("Unknown RR type: " ^ s)
 
-(* The rest of the structure remains the same *)
-type config_wrapper = {
-  sending_domains : (string * (string * dns_rrtype) list) list;
-} [@@deriving yojson]
+let string_of_rrtype = function
+  | A -> "A" 
+  | AAAA -> "AAAA" 
+  | CNAME -> "CNAME"
+  | MX -> "MX" 
+  | TXT -> "TXT"
 
-type nested_dns_map = (string, (string, dns_rrtype) Hashtbl.t) Hashtbl.t
+type sending_domains = (string, (string, rrtype) Hashtbl.t) Hashtbl.t
 
-let table_of_wrapper (w : config_wrapper) : nested_dns_map =
-  let outer_tbl = Hashtbl.create 16 in
-  List.iter (fun (domain, records) ->
-    let inner_tbl = Hashtbl.create (List.length records) in
-    List.iter (fun (subdomain, rr) -> 
-      Hashtbl.replace inner_tbl subdomain rr
-    ) records;
-    Hashtbl.replace outer_tbl domain inner_tbl
-  ) w.sending_domains
+let parse_record table (rr_name, rr_type) =
+  Hashtbl.replace table rr_name
+    (rrtype_to_string (String.lowercase_ascii (to_string rr_type)))
 
-let load_dns_config filename =
+let parse_sending_domain table (domain_key, records) =
+  let inner = Hashtbl.create 8 in
+  List.iter (parse_record inner) (to_assoc records);
+  Hashtbl.replace table domain_key inner
+
+let load_config filename =
   let json = Yojson.Safe.from_file filename in
-  match config_wrapper_of_yojson json with
-  | Ok wrapper -> table_of_wrapper wrapper
-  | Error msg -> failwith ("Fatal JSON Error: " ^ msg)
+  let tbl = Hashtbl.create 16 in
+  let domains = json |> member "sending_domains" |> to_assoc in
+  List.iter (parse_sending_domain tbl) domains;
+  tbl

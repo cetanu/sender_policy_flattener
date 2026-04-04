@@ -1,8 +1,13 @@
 open Cmdliner
 
 let compress name =
-    Printf.printf "Hello, %s!\n" name
-
+    let config = Cfg.load_config name in
+    Hashtbl.iter (fun domain inner ->
+      Printf.printf "\n[%s]\n" domain;
+      Hashtbl.iter (fun host rr ->
+        Printf.printf "  %s %s\n" host (Cfg.string_of_rrtype rr)
+      ) inner
+    ) config
 
 let config_arg =
   let doc = "Location of JSON config file on disk" in
