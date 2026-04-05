@@ -1,7 +1,8 @@
 (library
  (name spfcompress)
  (libraries 
-   cmdliner
-   yojson
- )
+    cmdliner
+    yojson
+    dns-client.unix
+  )
 )

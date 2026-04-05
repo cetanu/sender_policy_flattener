@@ -19,7 +19,7 @@
  (name spfcompress)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml cmdliner yojson ppx_yojson_conv_lib)
+ (depends ocaml cmdliner yojson dns-client)
  (tags
   ("add topics" "to describe" your project)))
 

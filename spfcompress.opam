@@ -14,7 +14,7 @@ depends: [
   "ocaml"
   "cmdliner"
   "yojson"
-  "ppx_yojson_conv_lib"
+  "dns-client"
   "odoc" {with-doc}
 ]
 build: [
