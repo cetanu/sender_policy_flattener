@@ -1,20 +1,62 @@
 open Cmdliner
 
 
+let parse_spf record = 
+    let mechanisms = String.split_on_char ' ' record in
+    List.filter_map (fun mechanism -> match String.split_on_char ':' mechanism with
+    | [k; v] -> (match k with
+        | "include" | "a" | "mx" | "ip4" | "ip6" | "exists" -> Some (k, v)
+        | _ -> failwith "invalid mechanism")
+    | _ -> None
+    ) mechanisms 
+
+
 let lookup client rr_name rr_type = 
     Printf.printf "  %s %s -- " rr_name (Cfg.string_of_rrtype rr_type);
+    
+    match Domain_name.of_string rr_name with
+    | Ok name ->
+        (match rr_type with
+        | Cfg.A -> 
+            let result = Dns_client_unix.get_resource_record client Dns.Rr_map.A name in
+            (match result with 
+            | Ok (_, ips) ->
+                let ip_strs = Ipaddr.V4.Set.fold (fun ip acc -> (Ipaddr.V4.to_string ip) :: acc) ips [] in
+                Printf.printf "Result: %s\n" (String.concat ", " ip_strs)
+            | Error _ -> Printf.printf "Result: error\n")
 
-    let rr = match rr_type with
-        | Cfg.A -> Dns.Rr_map.A
-        | Cfg.AAAA -> Dns.Rr_map.Aaaa
-        | Cfg.CNAME -> Dns.Rr_map.Cname
-        | Cfg.MX -> Dns.Rr_map.Mx
-        | Cfg.TXT -> Dns.Rr_map.Txt
-        | s -> Dns.Rr_map.A
-    in
-    let _result = Dns_client_unix.get_resource_record client rr rr_name 
-    Printf.printf "Result: %s\n" _result in
-    ()
+        | Cfg.AAAA -> 
+            let result = Dns_client_unix.get_resource_record client Dns.Rr_map.Aaaa name in
+            (match result with
+            | Ok (_, ips) -> 
+                let ip_strs = Ipaddr.V6.Set.fold (fun ip acc -> (Ipaddr.V6.to_string ip) :: acc) ips [] in
+                Printf.printf "Result: %s\n" (String.concat ", " ip_strs)
+            | Error _ -> Printf.printf "Result: error")
+
+        | Cfg.CNAME -> 
+            let _result = Dns_client_unix.get_resource_record client Dns.Rr_map.Cname name in
+            Printf.printf "Result: %s\n" (match _result with Ok _ -> "ok" | Error _ -> "error")
+
+        | Cfg.MX -> 
+            let _result = Dns_client_unix.get_resource_record client Dns.Rr_map.Mx name in
+            Printf.printf "Result: %s\n" (match _result with Ok _ -> "ok" | Error _ -> "error")
+
+        | Cfg.TXT -> 
+            let result = Dns_client_unix.get_resource_record client Dns.Rr_map.Txt name in
+            (match result with
+            | Ok (_, texts) ->
+                let spf_records = Dns.Rr_map.Txt_set.fold (fun txt acc -> 
+                    match txt with
+                    | _ when String.starts_with ~prefix:"v=spf" txt  -> 
+                            let _ = parse_spf txt in
+                            txt :: acc
+                    | _ -> acc
+            ) texts [] in
+                Printf.printf "Result: %s\n" (String.concat " @@@ " spf_records)
+            | Error _ -> Printf.printf "Result: error\n"))
+    | Error _ -> Printf.printf "Result: invalid domain\n"
+
+
 
 let compress name =
     let config = Cfg.load_config name in
