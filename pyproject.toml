@@ -1,6 +1,6 @@
 [project]
 name = "sender_policy_flattener"
-version = "0.4.0"
+version = "0.4.1"
 description = "Condense SPF records to network blocks to avoid DNS Lookup Limits"
 authors = [{ name = "Vasili Syrakis", email = "cetanu@gmail.com" }]
 requires-python = ">=3.10.0,<4"
