@@ -2,6 +2,7 @@
 import hashlib
 import sys
 from collections.abc import Iterator, Iterable
+from difflib import HtmlDiff
 
 from netaddr import IPSet, IPNetwork, AddrFormatError
 
@@ -12,6 +13,27 @@ BindRecord = str
 EmailBody = str
 IPAddress = str
 Netblock = str
+
+_diff_style = """
+    <style type="text/css">
+        body {font-family: "Helvetica Neue Light", "Lucida Grande", "Calibri", "Arial", sans-serif;}
+        a {text-decoration: none; color: royalblue; padding: 5px;}
+        a:visited {color: royalblue}
+        a:hover {background-color: royalblue; color: white;}
+        h1 {
+            font-family: "Helvetica Neue Light", "Lucida Grande", "Calibri", "Arial", sans-serif;
+            font-size: 14pt;
+        }
+        table.diff {border: 1px solid black;}
+        td {padding: 5px;}
+        td.diff_header {text-align:right}
+        .diff_header {background-color:#e0e0e0}
+        .diff_next {background-color:#c0c0c0}
+        .diff_add {background-color:#aaffaa}
+        .diff_chg {background-color:#ffff77}
+        .diff_sub {background-color:#ffaaaa}
+    </style>
+    """
 
 
 def wrap_in_spf_tokens(
@@ -48,7 +70,7 @@ def sequence_hash(iterable: Iterable[str]) -> str:
     return hashlib.sha256(flat_sorted_sequence.encode()).hexdigest()
 
 
-def format_records_for_email(curr_addrs: list[SPFRecord]) -> EmailBody:
+def _bind_lines(curr_addrs: list[SPFRecord]) -> list[BindRecord]:
     bindformat: list[BindRecord] = []
     for record in curr_addrs:
         bindformat.extend(format_rrecord_value_for_bind(record))
@@ -58,12 +80,45 @@ def format_records_for_email(curr_addrs: list[SPFRecord]) -> EmailBody:
         if "(" in chunk:
             bindformat[index] = "@ IN TXT (" if count == 0 else f"spf{count} IN TXT ("
             count += 1
+    return bindformat
 
+
+def format_records_for_email(curr_addrs: list[SPFRecord]) -> EmailBody:
+    bindformat = _bind_lines(curr_addrs)
     return (
         "<p><h1>BIND compatible format:</h1><pre>"
         + "\n".join(bindformat)
         + "</pre></p>"
     )
+
+
+def format_records_as_bind_text(curr_addrs: list[SPFRecord]) -> str:
+    """Plain (non-HTML) BIND zonefile snippet, for writing straight to disk."""
+    return "\n".join(_bind_lines(curr_addrs))
+
+
+def render_diff_html(
+    zone: Domain, prev_addrs: list[SPFRecord], curr_addrs: list[SPFRecord]
+) -> tuple[EmailBody, EmailBody]:
+    """Renders a standalone HTML page: BIND format + an old/new records diff.
+
+    Returns (html, bindformat) — bindformat is also handed back since callers
+    (email + on-disk reports) both want it, and it's already computed here.
+    """
+    bindformat = format_records_for_email(curr_addrs)
+    prev_addrs_str = " ".join(prev_addrs)
+    curr_addrs_str = " ".join(curr_addrs)
+    prev = sorted([s for s in prev_addrs_str.split() if "ip" in s])
+    curr = sorted([s for s in curr_addrs_str.split() if "ip" in s])
+
+    diff = HtmlDiff()
+    table = diff.make_table(
+        fromlines=prev, tolines=curr, fromdesc="Old records", todesc="New records"
+    )
+
+    header = f"<h1>Diff for {zone}</h1>"
+    html = _diff_style + bindformat + header + table
+    return html, bindformat
 
 
 def ips_to_spf_strings(ips: set[IPAddress | Netblock]) -> list[str]:

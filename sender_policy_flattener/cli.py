@@ -85,6 +85,20 @@ def main(
         "--static-ips",
         help="Comma separated IPs to be added to the SPF record",
     ),
+    report_dir: str | None = typer.Option(
+        None,
+        "--report-dir",
+        help=(
+            "Directory to write a JSON/HTML-diff/BIND-format artifact to for "
+            "each sending domain whose SPF records changed, instead of (or "
+            "alongside) an email alert"
+        ),
+    ),
+    fail_on_change: bool = typer.Option(
+        False,
+        "--fail-on-change",
+        help="Exit with a non-zero status if any sending domain's SPF records changed",
+    ),
     use_tls: bool = typer.Option(
         False,
         "--use-tls",
@@ -117,10 +131,12 @@ def main(
             if sending_domain and domains:
                 spf_includes = [d.split(":") for d in domains.split(",")]
                 sending_domains = {sending_domain: {d[0]: d[1] for d in spf_includes}}
-            data = {
-                "sending_domains": sending_domains,
-                "resolvers": resolvers.split(","),
-                "email": {
+            # Email is optional: only build (and validate) an email config if
+            # the caller supplied any of its fields. Otherwise, rely on
+            # --report-dir/--fail-on-change instead of an email alert.
+            email_data = None
+            if any([mailserver, to, from_, subject]):
+                email_data = {
                     "to": to,
                     "from": from_,
                     "subject": subject,
@@ -128,16 +144,25 @@ def main(
                     "use_tls": use_tls,
                     "username": smtp_username,
                     "password": smtp_password,
-                },
+                }
+            data = {
+                "sending_domains": sending_domains,
+                "resolvers": resolvers.split(","),
+                "email": email_data,
                 "output": output,
                 "static_ips": static_ips.split(",") if static_ips else None,
+                "report_dir": report_dir,
+                "fail_on_change": fail_on_change,
             }
             app_config = AppConfig.model_validate(data)
     except ValidationError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(code=1)
 
-    asyncio.run(sender_policy_flattener.run(app_config))
+    changed_domains = asyncio.run(sender_policy_flattener.run(app_config))
+    if app_config.fail_on_change and changed_domains:
+        typer.echo(f"SPF records changed for: {', '.join(changed_domains)}", err=True)
+        raise typer.Exit(code=1)
 
 
 if __name__ == "__main__":

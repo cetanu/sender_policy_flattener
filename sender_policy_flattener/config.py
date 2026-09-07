@@ -51,8 +51,10 @@ class AppConfig(BaseModel):
     )
     static_ips: list[str] | None = None
     resolvers: list[str] = Field(default_factory=lambda: ["8.8.8.8", "8.8.4.4"])
-    email: EmailConfig
+    email: EmailConfig | None = None
     output: str = "spf_sums.json"
+    report_dir: str | None = None
+    fail_on_change: bool = False
 
 
 def load_config(path: str | Path) -> AppConfig:

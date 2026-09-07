@@ -1,9 +1,12 @@
 # coding=utf-8
+import json
 from unittest import mock
 
 import dns.asyncresolver
+from typer.testing import CliRunner
 
 from sender_policy_flattener import flatten
+from sender_policy_flattener.cli import app as cli_app
 from sender_policy_flattener.config import EmailConfig
 from sender_policy_flattener.crawler import crawl, spf2ips, default_resolvers
 from sender_policy_flattener.email_utils import email_changes
@@ -19,6 +22,8 @@ from sender_policy_flattener.handlers import (
     handle_a_prefix,
     handle_a_domain_prefix,
 )
+
+cli_runner = CliRunner()
 
 
 mocked_dns_object = "sender_policy_flattener.dns_utils.resolve"
@@ -251,7 +256,7 @@ async def test_crawler_top_level_a_rrtype_resolves_named_domain(mock_query, dns_
 @mock.patch("sender_policy_flattener.email_utils.smtplib", MockSmtplib)
 async def test_call_main_flatten_func(mock_query, dns_responses):
     mock_query.side_effect = lambda *a, **kw: MockDNSQuery(dns_responses, *a, **kw)
-    actual = await flatten(
+    actual, changed = await flatten(
         input_records={"test.com": {"test.com": "txt"}},
         dns_servers=["8.8.8.8"],
         email_config=test_email_config,
@@ -262,13 +267,14 @@ async def test_call_main_flatten_func(mock_query, dns_responses):
     expected_records = await spf2ips({"test.com": "txt"}, "test.com", resolvers=resolvers)
     expected = {"test.com": {"records": expected_records, "sum": expected_hash}}
     assert expected == actual
+    assert changed == []
 
 
 @mock.patch(mocked_dns_object)
 @mock.patch("sender_policy_flattener.email_utils.smtplib", MockSmtplib)
 async def test_call_main_flatten_func_on_large_spf_records(mock_query, dns_responses):
     mock_query.side_effect = lambda *a, **kw: MockDNSQuery(dns_responses, *a, **kw)
-    actual = await flatten(
+    actual, changed = await flatten(
         input_records={"test.com": {"galactus.com": "txt"}},
         dns_servers=["8.8.8.8"],
         email_config=test_email_config,
@@ -281,6 +287,7 @@ async def test_call_main_flatten_func_on_large_spf_records(mock_query, dns_respo
     )
     expected = {"test.com": {"records": expected_records, "sum": expected_large_hash}}
     assert expected == actual
+    assert changed == []
 
 
 @mock.patch(mocked_dns_object)
@@ -309,7 +316,7 @@ async def test_bind_format(mock_query, dns_responses, expected_final_email):
 async def test_flatten_with_static_ips(mock_query, dns_responses):
     mock_query.side_effect = lambda *a, **kw: MockDNSQuery(dns_responses, *a, **kw)
     static_ips = ["1.1.1.1", "2.2.2.0/24", "10.0.0.50/32"]
-    actual = await flatten(
+    actual, _changed = await flatten(
         input_records={"test.com": {"test.com": "txt"}},
         dns_servers=["8.8.8.8"],
         email_config=test_email_config,
@@ -338,3 +345,135 @@ async def test_flatten_with_static_ips(mock_query, dns_responses):
 
     # ip is compacted into 10.0.0.0/24
     assert static_ips[2] not in actual["test.com"]["records"][0]
+
+
+@mock.patch(mocked_dns_object)
+async def test_flatten_without_email_config_skips_email(mock_query, dns_responses):
+    # No smtplib patch here on purpose: if flatten() tried to email despite
+    # email_config=None, it would attempt a real SMTP connection and fail loudly.
+    mock_query.side_effect = lambda *a, **kw: MockDNSQuery(dns_responses, *a, **kw)
+    lastresult = {"test.com": {"sum": "old", "records": ["v=spf1 -all"]}}
+    actual, changed = await flatten(
+        input_records={"test.com": {"test.com": "txt"}},
+        dns_servers=["8.8.8.8"],
+        email_config=None,
+        lastresult=lastresult,
+    )
+    assert changed == ["test.com"]
+    assert actual["test.com"]["sum"] != "old"
+
+
+@mock.patch(mocked_dns_object)
+async def test_flatten_writes_report_dir_on_change(mock_query, dns_responses, tmp_path):
+    mock_query.side_effect = lambda *a, **kw: MockDNSQuery(dns_responses, *a, **kw)
+    lastresult = {"test.com": {"sum": "old", "records": ["v=spf1 -all"]}}
+    report_dir = tmp_path / "reports"
+    actual, changed = await flatten(
+        input_records={"test.com": {"test.com": "txt"}},
+        dns_servers=["8.8.8.8"],
+        email_config=None,
+        lastresult=lastresult,
+        report_dir=str(report_dir),
+    )
+    assert changed == ["test.com"]
+
+    json_report = report_dir / "test.com.json"
+    html_report = report_dir / "test.com.diff.html"
+    bind_report = report_dir / "test.com.bind.txt"
+    assert json_report.exists()
+    assert html_report.exists()
+    assert bind_report.exists()
+
+    report_data = json.loads(json_report.read_text())
+    assert report_data["previous"] == ["v=spf1 -all"]
+    assert report_data["current"] == actual["test.com"]["records"]
+    assert "Diff for test.com" in html_report.read_text()
+
+
+@mock.patch(mocked_dns_object)
+async def test_flatten_no_report_dir_writes_nothing(mock_query, dns_responses, tmp_path):
+    mock_query.side_effect = lambda *a, **kw: MockDNSQuery(dns_responses, *a, **kw)
+    lastresult = {"test.com": {"sum": "old", "records": ["v=spf1 -all"]}}
+    report_dir = tmp_path / "reports"
+    _actual, changed = await flatten(
+        input_records={"test.com": {"test.com": "txt"}},
+        dns_servers=["8.8.8.8"],
+        email_config=None,
+        lastresult=lastresult,
+    )
+    assert changed == ["test.com"]
+    assert not report_dir.exists()
+
+
+def _invoke_cli(mock_query, dns_responses, output_file, extra_args):
+    mock_query.side_effect = lambda *a, **kw: MockDNSQuery(dns_responses, *a, **kw)
+    return cli_runner.invoke(
+        cli_app,
+        [
+            "--resolvers",
+            "8.8.8.8",
+            "--sending-domain",
+            "test.com",
+            "--domains",
+            "test.com:txt",
+            "--output",
+            str(output_file),
+            *extra_args,
+        ],
+    )
+
+
+@mock.patch(mocked_dns_object)
+def test_cli_fail_on_change_exits_nonzero(mock_query, dns_responses, tmp_path):
+    output_file = tmp_path / "out.json"
+    output_file.write_text(
+        json.dumps({"test.com": {"sum": "old", "records": ["v=spf1 -all"]}})
+    )
+    result = _invoke_cli(
+        mock_query, dns_responses, output_file, ["--fail-on-change"]
+    )
+    assert result.exit_code == 1
+
+
+@mock.patch(mocked_dns_object)
+def test_cli_without_fail_on_change_exits_zero_on_change(
+    mock_query, dns_responses, tmp_path
+):
+    output_file = tmp_path / "out.json"
+    output_file.write_text(
+        json.dumps({"test.com": {"sum": "old", "records": ["v=spf1 -all"]}})
+    )
+    result = _invoke_cli(mock_query, dns_responses, output_file, [])
+    assert result.exit_code == 0
+
+
+@mock.patch(mocked_dns_object)
+def test_cli_report_dir_writes_artifacts_and_fails(mock_query, dns_responses, tmp_path):
+    output_file = tmp_path / "out.json"
+    output_file.write_text(
+        json.dumps({"test.com": {"sum": "old", "records": ["v=spf1 -all"]}})
+    )
+    report_dir = tmp_path / "reports"
+    result = _invoke_cli(
+        mock_query,
+        dns_responses,
+        output_file,
+        ["--report-dir", str(report_dir), "--fail-on-change"],
+    )
+    assert result.exit_code == 1
+    assert (report_dir / "test.com.json").exists()
+    assert (report_dir / "test.com.diff.html").exists()
+    assert (report_dir / "test.com.bind.txt").exists()
+
+
+@mock.patch(mocked_dns_object)
+def test_cli_no_change_exits_zero_even_with_fail_on_change(
+    mock_query, dns_responses, tmp_path
+):
+    output_file = tmp_path / "out.json"
+    # First run establishes the baseline result.
+    first = _invoke_cli(mock_query, dns_responses, output_file, ["--fail-on-change"])
+    assert first.exit_code == 0
+    # Second run against the same (now up to date) baseline sees no change.
+    second = _invoke_cli(mock_query, dns_responses, output_file, ["--fail-on-change"])
+    assert second.exit_code == 0
