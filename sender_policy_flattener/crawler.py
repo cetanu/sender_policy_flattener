@@ -37,6 +37,14 @@ log = structlog.get_logger(__name__)
 default_resolvers = dns.asyncresolver.Resolver()
 
 
+def _is_spf_record(rdata: object) -> bool:
+    # A domain can carry unrelated TXT records (site verification, DKIM
+    # selectors, ...) alongside its SPF one. Per RFC 7208 section 4.5, only
+    # records starting with "v=spf1" are SPF; anything else must be ignored
+    # rather than scanned for mechanism-looking substrings.
+    return str(rdata).strip().strip('"').lower().startswith("v=spf1")
+
+
 async def crawl(
     rrname: Record,
     rrtype: RRType,
@@ -65,7 +73,7 @@ async def crawl(
     except Exception as err:
         log.warning("dns_lookup_failed", rrname=rrname, rrtype=rrtype, error=repr(err))
     else:
-        answer = " ".join([str(a) for a in answers])
+        answer = " ".join([str(a) for a in answers if _is_spf_record(a)])
         for pair in tokenize(answer):
             rname, rtype = pair
             if rtype is None:

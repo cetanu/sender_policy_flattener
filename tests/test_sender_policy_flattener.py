@@ -253,6 +253,25 @@ async def test_crawler_top_level_a_rrtype_resolves_named_domain(mock_query, dns_
 
 
 @mock.patch(mocked_dns_object)
+async def test_crawler_ignores_non_spf_txt_records(mock_query):
+    # A domain can carry unrelated TXT records (site verification, DKIM
+    # selectors, ...) alongside its SPF one. Only the record starting with
+    # "v=spf1" should be tokenized; others must be ignored even if they
+    # happen to contain mechanism-looking substrings (see PR #20).
+    responses = {
+        "txt": {
+            "test.com": [
+                "google-site-verification=abc123 ip4:6.6.6.6",
+                '"v=spf1 ip4:1.2.3.4 -all"',
+            ],
+        },
+    }
+    mock_query.side_effect = lambda *a, **kw: MockDNSQuery(responses, *a, **kw)
+    actual = [str(s) async for s in crawl("test.com", "txt", "test.com")]
+    assert actual == ["1.2.3.4"]
+
+
+@mock.patch(mocked_dns_object)
 @mock.patch("sender_policy_flattener.email_utils.smtplib", MockSmtplib)
 async def test_call_main_flatten_func(mock_query, dns_responses):
     mock_query.side_effect = lambda *a, **kw: MockDNSQuery(dns_responses, *a, **kw)
