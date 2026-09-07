@@ -15,6 +15,7 @@ from sender_policy_flattener.mechanisms import tokenize
 from sender_policy_flattener.handlers import (
     handler_mapping,
     prefix_handler_mapping,
+    top_level_handler_mapping,
 )
 
 # Type Aliases
@@ -29,6 +30,17 @@ default_resolvers = resolver.Resolver()
 def crawl(
     rrname: Record, rrtype: RRType, domain: Domain, ns: Resolver = default_resolvers
 ) -> Iterator[Netblock]:
+    rrtype = rrtype.lower()
+    if rrtype != "txt":
+        # Top-level "sending domains" entries carry an explicit target name
+        # (e.g. {"example.com": "a"}), unlike SPF mechanisms embedded in a
+        # TXT record's text, which are resolved by tokenizing below.
+        try:
+            for result in top_level_handler_mapping[rrtype](rrname, domain, ns):
+                yield str(result)
+        except (NXDOMAIN, NoAnswer) as e:
+            print(e)
+        return
     try:
         answers = ns.query(from_text(rrname), rrtype)
     except Exception as err:

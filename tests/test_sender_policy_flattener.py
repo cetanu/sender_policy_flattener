@@ -212,6 +212,16 @@ def test_crawler_returns_all_expected_ips(
 
 
 @mock.patch(mocked_dns_object)
+def test_crawler_top_level_a_rrtype_resolves_named_domain(mock_query, dns_responses):
+    # Regression test: a top-level "sending domains" entry like
+    # {"example.com": "a"} must resolve example.com's own A record,
+    # not silently yield nothing (see issue #17).
+    mock_query.side_effect = lambda *a, **kw: MockDNSQuery(dns_responses, *a, **kw)
+    actual = [str(s) for s in crawl("test.fake", "a", "test.com")]
+    assert actual == ["10.0.0.10", "10.0.0.11"]
+
+
+@mock.patch(mocked_dns_object)
 @mock.patch("sender_policy_flattener.email_utils.smtplib", side_effect=MockSmtplib)
 def test_call_main_flatten_func(mock_smtp, mock_query, dns_responses):
     mock_query.side_effect = lambda *a, **kw: MockDNSQuery(dns_responses, *a, **kw)

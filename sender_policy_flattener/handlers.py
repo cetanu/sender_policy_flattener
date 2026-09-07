@@ -116,3 +116,15 @@ prefix_handler_mapping: dict[str, PrefixHandler] = {
     "a_prefix": handle_a_prefix,
     "a_domain_prefix": handle_a_domain_prefix,
 }
+
+# Used for top-level "sending domains" entries, e.g. {"example.com": "a"}.
+# These always carry an explicit target name, so "a"/"mx" here mean
+# "resolve this named domain's records" (the *_domain handlers), unlike
+# the bare "a"/"mx" SPF mechanisms which mean "resolve the current domain".
+top_level_handler_mapping: dict[str, Handler] = {
+    "a": handle_a_domain,
+    "mx": handle_mx_domain,
+    "ptr": handle_ptr,
+    "exists": handle_exists,
+    "ip": handle_ip,
+}
