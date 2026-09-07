@@ -4,7 +4,8 @@
     ".": {
       "release-type": "python",
       "package-name": "sender_policy_flattener",
-      "changelog-path": "CHANGELOG.md"
+      "changelog-path": "CHANGELOG.md",
+      "include-component-in-tag": false
     }
   }
 }
