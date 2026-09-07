@@ -1,159 +1,84 @@
 sender policy flattener
 =======================
-We had a problem in our organisation that caused our SPF records to become invalid:
-
-When customers computers were querying our SPF records, there were more than 10 lookups required after following all of the ``include:`` remarks.
-
-Solution? Query them ourselves, and create a much more condense list of SPF records.
-
-#### But wait... What if the downstream records change?
-
-Part of what the script does is that it creates a JSON file that keeps track of the last list of IP Addresses that your combination of SPF records had.
-
-When the hashsum of your IP Addresses changes, it will send out an email (or just dump HTML if it can't find an email server) with a handy diff & BIND format for viewing what has changed, and promptly updating it.
-
-You could theoretically extract the flat IP records from the resulting JSON file and automatically update your DNS configuration with it.
+Flattens SPF `include:`/`a`/`mx` chains into compact IP/CIDR blocks, so you
+stay under the 10-lookup SPF limit. Tracks the last result in a JSON file;
+when the flattened IPs change, it can email a diff, write change artifacts
+to disk, and/or exit non-zero for CI.
 
 Installation
 --------------------
-
-#### via git clone
-
-Clone this repo and run
-
-```shell
-pip install poetry
-poetry install
-```
-
-
-#### via pip
 
 ```shell
 pip install sender_policy_flattener
 ```
 
-
 Usage
 ----------------
 
-```
-usage: spflat [-h] [-c CONFIG] [-r RESOLVERS] [-e MAILSERVER] [-t TOADDR]
-              [-f FROMADDR] [-s SUBJECT] [-D SENDING_DOMAIN] [-d DOMAINS]
-              [-o OUTPUT] [--static-ips STATIC_IPS]
-
-A script that crawls and compacts SPF records into IP networks. This helps to
-avoid exceeding the DNS lookup limit of the Sender Policy Framework (SPF)
-https://tools.ietf.org/html/rfc7208#section-4.6.4
-
-options:
-  -h, --help            show this help message and exit
-  -c, --config CONFIG   Name/path of JSON configuration file
-  -r, --resolvers RESOLVERS
-                        Comma separated DNS servers to be used
-  -e, -mailserver MAILSERVER
-                        Server to use for mailing alerts
-  -t, -to TOADDR        Recipient address for email alert
-  -f, -from FROMADDR    Sending address for email alert
-  -s, -subject SUBJECT  Subject string, must contain {zone}
-  -D, --sending-domain SENDING_DOMAIN
-                        The domain which emails are being sent from
-  -d, --domains DOMAINS
-                        Comma separated domain:rrtype to flatten to IP
-                        addresses. Imagine these are your SPF include
-                        statements.
-  -o, --output OUTPUT   Name/path of output file
-  --static-ips STATIC_IPS
-                        Comma separated IPs to be added to the SPF record
+```shell
+spflat --help
 ```
 
-Note: there is no default config file location — `-c`/`--config` must point at
-a JSON file you provide (see the ``settings.json`` example in this repo). If
-you don't pass `-c`, you must instead pass every other flag on the command
-line (`--domains`, `--sending-domain`, `--to`, `--from`, `--subject`,
-`--mailserver`, at minimum).
-
-Also note that flags containing a value with spaces (like `--subject`) must
-be quoted as a single shell argument, e.g. `--subject 'SPF Flat'`, not
-`--subject 'SPF' 'Flat'`.
-
-Example
+No default config path — pass `-c/--config` (JSON or TOML, see `example/`),
+or pass `--domains`/`--sending-domain` and friends directly instead. The two
+are mutually exclusive: `--config` ignores any other CLI flags. Config keys
+and CLI flags map 1:1 (see below).
 
 ```shell
 spflat --resolvers 8.8.8.8,8.8.4.4 \
-    --to me@mydomain.com \
-    --from admin@mydomain.com \
-    --subject 'SPF for {zone} has changed!' \
     --domains gmail.com:txt,sendgrid.com:txt,yahoo.com:a \
-    --sending-domain mydomain.com
+    --sending-domain mydomain.com \
+    --to me@mydomain.com --from admin@mydomain.com \
+    --subject 'SPF for {zone} has changed!'
 ```
-or
+
+#### Config file
+
+`example/settings_example.toml` / `.json` — TOML recommended, JSON kept for
+back-compat.
+
+```toml
+output = "sums.json"
+resolvers = ["8.8.8.8", "8.8.4.4"]
+static_ips = ["203.0.113.10", "203.0.113.11/32"]  # always-included, e.g. relays not visible via DNS
+
+[sending_domains."mydomain.com"]
+"yahoo.com" = "a"      # a:yahoo.com
+"google.com" = "txt"   # include:google.com
+
+[email]
+to = "your@email.com"
+from = "your@email.com"
+subject = "[Change Detected] SPF Records for {zone} have changed."
+server = "email_server"
+use_tls = false
+# username = "smtp-user"
+# password = "smtp-pass"
+```
+
+`sending_domains` (JSON: `"sending domains"`) maps each domain you send as
+to `{name: rrtype}`, one entry per `include:`/`a`/`mx` target. Multiple
+top-level domains are processed independently in one run.
+
+`email` is optional — omit it for no email alert. If given, `to`/`from`/
+`subject`/`server` are required; `use_tls`/`username`/`password` aren't.
+Bad/missing config fields raise a validation error naming the field.
+
+#### CI / build-pipeline use
+
+Instead of, or alongside, email:
 
 ```shell
-spflat --config spf.json
-```
-You can specify a config file, or you can specify all of the optional arguments from the command line.
-
-I've provided a ``settings.json`` file with an example configuration file.
-
-#### Config file format
-
-```json
-{
-    "sending domains": {
-        "mydomain.com": {
-            "yahoo.com": "a",
-            "google.com": "txt",
-            "apple.com": "txt",
-            "reddit.com": "txt"
-        },
-        "myseconddomain.com": {
-            "cisco.com": "a",
-            "oculus.com": "a"
-        }
-    },
-    "static_ips": ["203.0.113.10", "203.0.113.11/32"],
-    "resolvers": ["8.8.8.8", "8.8.4.4"],
-    "email": {
-        "to": "your@email.com",
-        "from": "your@email.com",
-        "subject": "[Change Detected] SPF Records for {zone} have changed.",
-        "server": "email_server"
-    },
-    "output": "sums.json"
-}
+spflat --config spf.toml --report-dir ./spf-report --fail-on-change
 ```
 
-``sending domains`` is a map of *each domain you send email as* to the list
-of remote services/records that domain's SPF should flatten. You'll usually
-only have one entry here (your own sending domain). A second top-level entry
-like ``myseconddomain.com`` above is only needed if you send email as more
-than one domain and want both flattened in a single run — each is processed
-and reported on independently; it isn't nested under, or related to, the
-first domain.
-
-For each sending domain, the inner map is `{name: rrtype}` — the same thing
-you'd write as `include:`, `a`, `mx`, etc. in a manual SPF record.
-`"google.com": "txt"` means "flatten google.com's TXT (SPF) record", exactly
-like `include:google.com`. `"yahoo.com": "a"` means "resolve yahoo.com's own
-A record", like `a:yahoo.com`.
-
-``static_ips`` (optional) is a flat list of IPs/CIDRs to always include in
-every sending domain's output, regardless of what DNS resolves — useful for
-mail relays or on-prem senders that aren't discoverable via any include/a/mx
-lookup. Equivalent to the `--static-ips` CLI flag.
-
-
-Supported Python versions
--------------------------
-See the latest result of the build: https://github.com/cetanu/sender_policy_flattener/actions
-
+* `--report-dir DIR` (`report_dir`) — on change, writes
+  `DIR/<domain>.json`, `.diff.html`, `.bind.txt` per sending domain.
+* `--fail-on-change` (`fail_on_change`) — exit 1 if anything changed.
 
 3rd party dependencies
 ----------------------
-* netaddr
-* dnspython
-
+netaddr, dnspython, typer, pydantic, structlog, tenacity
 
 Example email format
 --------------------
