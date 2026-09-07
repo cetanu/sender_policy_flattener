@@ -7,7 +7,7 @@ from email.mime.multipart import MIMEMultipart
 import structlog
 
 from sender_policy_flattener.config import EmailConfig
-from sender_policy_flattener.formatting import render_diff_html
+from sender_policy_flattener.formatting import render_diff_html, SourceMap
 
 # Type Aliases
 Domain = str
@@ -23,9 +23,13 @@ def email_changes(
     curr_addrs: list[SPFRecord],
     subject: str,
     config: EmailConfig,
+    prev_sources: SourceMap | None = None,
+    curr_sources: SourceMap | None = None,
     test: bool = False,
 ) -> str | None:
-    html, bindformat = render_diff_html(zone, prev_addrs, curr_addrs)
+    html, bindformat = render_diff_html(
+        zone, prev_addrs, curr_addrs, prev_sources, curr_sources
+    )
     html_part = MIMEText(html, "html")
     msg_template = MIMEMultipart("alternative")
     msg_template["Subject"] = subject.format(zone=zone)

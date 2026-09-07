@@ -265,7 +265,32 @@ async def test_call_main_flatten_func(mock_query, dns_responses):
     resolvers = dns.asyncresolver.Resolver()
     resolvers.nameservers = ["8.8.8.8"]
     expected_records = await spf2ips({"test.com": "txt"}, "test.com", resolvers=resolvers)
-    expected = {"test.com": {"records": expected_records, "sum": expected_hash}}
+    expected_sources = {
+        "10.0.0.0/24": ["test.com"],
+        "10.0.0.1": ["test.com"],
+        "10.0.0.1/32": ["test.com"],
+        "10.0.0.10": ["test.com"],
+        "10.0.0.11": ["test.com"],
+        "10.0.0.12": ["test.com"],
+        "10.0.0.12/27": ["test.com"],
+        "10.0.0.13": ["test.com"],
+        "10.0.0.13/27": ["test.com"],
+        "172.16.0.0/24": ["spf.fake.test"],
+        "172.16.0.1": ["spf.fake.test"],
+        "172.16.0.1/32": ["spf.fake.test"],
+        "192.168.0.1/26": ["test.com"],
+        "2001:4860:4000::": ["test.com"],
+        "2404:6800:4000::/36": ["test.com"],
+        "exists:fake.test": ["test.com"],
+        "ptr:10.0.0.1.in-addr.arpa": ["test.com"],
+    }
+    expected = {
+        "test.com": {
+            "records": expected_records,
+            "sum": expected_hash,
+            "sources": expected_sources,
+        }
+    }
     assert expected == actual
     assert changed == []
 
@@ -285,9 +310,13 @@ async def test_call_main_flatten_func_on_large_spf_records(mock_query, dns_respo
     expected_records = await spf2ips(
         {"galactus.com": "txt"}, "test.com", resolvers=resolvers
     )
+    sources = actual["test.com"].pop("sources")
     expected = {"test.com": {"records": expected_records, "sum": expected_large_hash}}
     assert expected == actual
     assert changed == []
+    # galactus.com is the only top-level target, so every raw netblock is
+    # attributed to it regardless of how CIDR compaction later groups them.
+    assert sources and all(v == ["galactus.com"] for v in sources.values())
 
 
 @mock.patch(mocked_dns_object)
@@ -337,6 +366,7 @@ async def test_flatten_with_static_ips(mock_query, dns_responses):
             "sum": "bf89b41176a3ecc5ab21b036270d680d9431130d83afe5305be42f566f7e4131",
         }
     }
+    sources = actual["test.com"].pop("sources")
     assert expected == actual
 
     # static ips and ranges are added
@@ -345,6 +375,17 @@ async def test_flatten_with_static_ips(mock_query, dns_responses):
 
     # ip is compacted into 10.0.0.0/24
     assert static_ips[2] not in actual["test.com"]["records"][0]
+
+    # raw static entries are attributed to "static"...
+    assert sources["1.1.1.1"] == ["static"]
+    assert sources["2.2.2.0/24"] == ["static"]
+    assert sources["10.0.0.50/32"] == ["static"]
+    # ...and even though 10.0.0.50/32 got compacted away into 10.0.0.0/24
+    # alongside crawled addresses, containment-based attribution still
+    # credits both the static entry and the crawl that produced 10.0.0.0/24.
+    from sender_policy_flattener.formatting import attribute_sources
+
+    assert attribute_sources("10.0.0.0/24", sources) == ["static", "test.com"]
 
 
 @mock.patch(mocked_dns_object)
