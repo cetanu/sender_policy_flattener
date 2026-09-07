@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.0](https://github.com/cetanu/sender_policy_flattener/compare/v0.5.0...v0.6.0) (2026-09-07)
+
+
+### Features
+
+* attribute flattened IPs back to their originating include ([3b2e1ac](https://github.com/cetanu/sender_policy_flattener/commit/3b2e1ac322a84289439123351865cdb501b89ef2)), closes [#18](https://github.com/cetanu/sender_policy_flattener/issues/18)
+
+
+### Bug Fixes
+
+* ignore TXT records that don't start with v=spf1 ([55f8410](https://github.com/cetanu/sender_policy_flattener/commit/55f84109df8139aa1e2c3ff20f41c52e3b0b714d))
+
 ## [0.5.0](https://github.com/cetanu/sender_policy_flattener/compare/v0.4.1...v0.5.0) (2026-09-07)
 
 
