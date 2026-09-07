@@ -253,6 +253,17 @@ async def test_crawler_top_level_a_rrtype_resolves_named_domain(mock_query, dns_
 
 
 @mock.patch(mocked_dns_object)
+async def test_crawler_top_level_txt_rrtype_does_not_crash(mock_query, dns_responses):
+    # Regression test: a top-level "sending domains" entry using rrtype
+    # "txt" for another domain (e.g. {"galactus.com": "txt"}) must resolve
+    # without crashing (see issue #14 — reported as "too many values to
+    # unpack (expected 2)").
+    mock_query.side_effect = lambda *a, **kw: MockDNSQuery(dns_responses, *a, **kw)
+    actual = [str(s) async for s in crawl("galactus.com", "txt", "test.com")]
+    assert actual
+
+
+@mock.patch(mocked_dns_object)
 async def test_crawler_ignores_non_spf_txt_records(mock_query):
     # A domain can carry unrelated TXT records (site verification, DKIM
     # selectors, ...) alongside its SPF one. Only the record starting with
