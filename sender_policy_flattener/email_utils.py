@@ -5,12 +5,17 @@ from difflib import HtmlDiff
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+import structlog
+
+from sender_policy_flattener.config import EmailConfig
 from sender_policy_flattener.formatting import format_records_for_email
 
 # Type Aliases
 Domain = str
 EmailAddress = str
 SPFRecord = str
+
+log = structlog.get_logger(__name__)
 
 _email_style = """
     <style type="text/css">
@@ -39,9 +44,7 @@ def email_changes(
     prev_addrs: list[SPFRecord],
     curr_addrs: list[SPFRecord],
     subject: str,
-    server: str,
-    fromaddr: EmailAddress,
-    toaddr: EmailAddress,
+    config: EmailConfig,
     test: bool = False,
 ) -> str | None:
     bindformat = format_records_for_email(curr_addrs)
@@ -60,16 +63,20 @@ def email_changes(
     html_part = MIMEText(html, "html")
     msg_template = MIMEMultipart("alternative")
     msg_template["Subject"] = subject.format(zone=zone)
-    msg_template["From"] = fromaddr
+    msg_template["From"] = config.from_
     email = msg_template
     email.attach(html_part)
 
     try:
-        mailserver = smtplib.SMTP()
-        mailserver.connect(server)
-        mailserver.sendmail(fromaddr, toaddr, email.as_string())
+        port = config.port if config.port is not None else smtplib.SMTP_PORT
+        with smtplib.SMTP(config.server, port) as mailserver:
+            if config.use_tls:
+                mailserver.starttls()
+            if config.username and config.password:
+                mailserver.login(config.username, config.password)
+            mailserver.sendmail(config.from_, config.to, email.as_string())
     except Exception as err:
-        print("Email failed: " + str(err))
+        log.warning("email_send_failed", error=str(err))
         with open("result.html", "w+") as mailfile:
             mailfile.write(html_part.as_string())
     if test:

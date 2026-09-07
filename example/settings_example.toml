@@ -1,0 +1,20 @@
+output = "sums.json"
+resolvers = ["8.8.8.8", "8.8.4.4"]
+static_ips = ["1.2.3.4", "5.6.7.8/30"]
+
+[sending_domains."mydomain.com"]
+"yahoo.com" = "a"
+"google.com" = "txt"
+"apple.com" = "txt"
+"reddit.com" = "txt"
+
+[sending_domains."myseconddomain.com"]
+"cisco.com" = "a"
+"oculus.com" = "a"
+
+[email]
+to = "your@email.com"
+from = "your@email.com"
+subject = "[Change Detected] SPF Records for {zone} have changed."
+server = "email_server"
+use_tls = false

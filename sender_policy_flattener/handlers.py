@@ -1,101 +1,116 @@
 # coding=utf-8
+import asyncio
+from collections.abc import AsyncIterator
 from typing import Callable
-from collections.abc import Iterator
 
-from dns.name import from_text
-from dns.resolver import Resolver
+import dns.asyncresolver
 from netaddr import IPNetwork, IPAddress
+
+from sender_policy_flattener import dns_utils
 
 # Type Aliases
 Domain = str
 Mechanism = str
 Netblock = str
-HandlerResponse = Iterator[str | IPNetwork | IPAddress | Netblock]
-Handler = Callable[[str, Domain, Resolver], HandlerResponse]
-PrefixHandler = Callable[[list[str], Domain, Resolver], HandlerResponse]
+HandlerResponse = AsyncIterator[str | IPNetwork | IPAddress | Netblock]
+Handler = Callable[[str, Domain, dns.asyncresolver.Resolver], HandlerResponse]
+PrefixHandler = Callable[
+    [list[str], Domain, dns.asyncresolver.Resolver], HandlerResponse
+]
 
 
-def handle_ip(name: str, domain: Domain, ns: Resolver) -> Iterator[Netblock]:  # pyright: ignore[reportUnusedParameter]
+async def handle_ip(
+    name: str, domain: Domain, ns: dns.asyncresolver.Resolver
+) -> AsyncIterator[Netblock]:
     yield name
 
 
-def handle_mx(name: str, domain: Domain, ns: Resolver) -> Iterator[IPAddress]:  # pyright: ignore[reportUnusedParameter]
-    answers = ns.query(from_text(domain), "mx")
-    for mailexchange in answers:
-        ips = ns.query(mailexchange.exchange, "a")
+async def _mx_ips(
+    target: Domain, ns: dns.asyncresolver.Resolver
+) -> AsyncIterator[IPAddress]:
+    answers = await dns_utils.resolve(ns, target, "mx")
+    exchanges = [str(mailexchange.exchange) for mailexchange in answers]
+    results = await asyncio.gather(
+        *(dns_utils.resolve(ns, exchange, "a") for exchange in exchanges)
+    )
+    for ips in results:
         for ip in ips:
             yield IPAddress(ip.address)
 
 
-def handle_mx_domain(name: str, domain: Domain, ns: Resolver) -> Iterator[IPAddress]:  # pyright: ignore[reportUnusedParameter]
-    answers = ns.query(from_text(name), "mx")
-    for mailexchange in answers:
-        ips = ns.query(mailexchange, "a")
-        for ip in ips:
-            yield IPAddress(ip.address)
+async def handle_mx(
+    name: str, domain: Domain, ns: dns.asyncresolver.Resolver
+) -> AsyncIterator[IPAddress]:
+    async for ip in _mx_ips(domain, ns):
+        yield ip
 
 
-def handle_mx_prefix(
-    name: list[str], domain: Domain, ns: Resolver
-) -> Iterator[IPNetwork]:
+async def handle_mx_domain(
+    name: str, domain: Domain, ns: dns.asyncresolver.Resolver
+) -> AsyncIterator[IPAddress]:
+    async for ip in _mx_ips(name, ns):
+        yield ip
+
+
+async def handle_mx_prefix(
+    name: list[str], domain: Domain, ns: dns.asyncresolver.Resolver
+) -> AsyncIterator[IPNetwork]:
     _name, prefix = name
-    answers = ns.query(from_text(domain), "mx")
-    for mailexchange in answers:
-        ips = ns.query(mailexchange.exchange, "a")
-        for ip in ips:
-            yield IPNetwork(f"{ip}/{prefix}")
+    async for ip in _mx_ips(domain, ns):
+        yield IPNetwork(f"{ip}/{prefix}")
 
 
-def handle_mx_domain_prefix(
-    name: list[str],
-    domain: Domain,  # pyright: ignore[reportUnusedParameter]
-    ns: Resolver,
-) -> Iterator[IPNetwork]:
+async def handle_mx_domain_prefix(
+    name: list[str], domain: Domain, ns: dns.asyncresolver.Resolver
+) -> AsyncIterator[IPNetwork]:
     _name, prefix = name
-    answers = ns.query(from_text(_name), "mx")
-    for mailexchange in answers:
-        ips = ns.query(mailexchange, "a")
-        for ip in ips:
-            yield IPNetwork(f"{ip}/{prefix}")
+    async for ip in _mx_ips(_name, ns):
+        yield IPNetwork(f"{ip}/{prefix}")
 
 
-def handle_a(name: str, domain: Domain, ns: Resolver) -> Iterator[IPAddress]:  # pyright: ignore[reportUnusedParameter]
-    answers = ns.query(from_text(domain), "a")
+async def handle_a(
+    name: str, domain: Domain, ns: dns.asyncresolver.Resolver
+) -> AsyncIterator[IPAddress]:
+    answers = await dns_utils.resolve(ns, domain, "a")
     for ip in answers:
         yield IPAddress(ip.address)
 
 
-def handle_a_domain(name: str, domain: Domain, ns: Resolver) -> Iterator[IPAddress]:  # pyright: ignore[reportUnusedParameter]
-    answers = ns.query(from_text(name), "a")
+async def handle_a_domain(
+    name: str, domain: Domain, ns: dns.asyncresolver.Resolver
+) -> AsyncIterator[IPAddress]:
+    answers = await dns_utils.resolve(ns, name, "a")
     for ip in answers:
         yield IPAddress(ip.address)
 
 
-def handle_a_prefix(
-    name: list[str], domain: Domain, ns: Resolver
-) -> Iterator[IPNetwork]:
+async def handle_a_prefix(
+    name: list[str], domain: Domain, ns: dns.asyncresolver.Resolver
+) -> AsyncIterator[IPNetwork]:
     _name, prefix = name
-    answers = ns.query(from_text(domain), "a")
+    answers = await dns_utils.resolve(ns, domain, "a")
     for ip in answers:
         yield IPNetwork(f"{ip}/{prefix}")
 
 
-def handle_a_domain_prefix(
-    name: list[str],
-    domain: Domain,  # pyright: ignore[reportUnusedParameter]
-    ns: Resolver,
-) -> Iterator[IPNetwork]:
+async def handle_a_domain_prefix(
+    name: list[str], domain: Domain, ns: dns.asyncresolver.Resolver
+) -> AsyncIterator[IPNetwork]:
     _name, prefix = name
-    answers = ns.query(from_text(_name), "a")
+    answers = await dns_utils.resolve(ns, _name, "a")
     for ip in answers:
         yield IPNetwork(f"{ip}/{prefix}")
 
 
-def handle_ptr(name: str, domain: Domain, ns: Resolver) -> Iterator[str]:  # pyright: ignore[reportUnusedParameter]
+async def handle_ptr(
+    name: str, domain: Domain, ns: dns.asyncresolver.Resolver
+) -> AsyncIterator[str]:
     yield f"ptr:{name}"
 
 
-def handle_exists(name: str, domain: Domain, ns: Resolver) -> Iterator[str]:  # pyright: ignore[reportUnusedParameter]
+async def handle_exists(
+    name: str, domain: Domain, ns: dns.asyncresolver.Resolver
+) -> AsyncIterator[str]:
     yield f"exists:{name}"
 
 

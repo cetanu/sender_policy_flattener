@@ -26,25 +26,33 @@ classifiers = [
     "Natural Language :: English",
 ]
 dependencies = [
-    "dnspython",
-    "netaddr",
+    "dnspython>=2.6",
+    "netaddr>=1.0",
+    "typer",
+    "pydantic[email]",
+    "structlog",
+    "tenacity",
+    "tomli; python_version < '3.11'",
 ]
 
 [project.urls]
 Repository = "https://github.com/cetanu/sender_policy_flattener"
 
 [project.scripts]
-spflat = "sender_policy_flattener.cli:main"
+spflat = "sender_policy_flattener.cli:app"
 
 [dependency-groups]
 dev = [
     "pytest",
     "pytest-spec",
-    "mock",
+    "pytest-asyncio",
     "ruff",
     "mypy",
     "types-netaddr",
 ]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
 
 [build-system]
 requires = ["hatchling"]
